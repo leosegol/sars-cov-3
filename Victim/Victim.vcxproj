@@ -144,6 +144,7 @@
   <ItemGroup>
     <ClCompile Include="Socket.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Victim.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
