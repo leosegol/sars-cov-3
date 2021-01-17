@@ -19,19 +19,41 @@ struct DHCP_header
     char magic[4];      // DHCP options
     char opt[3];        // DHCP options
 };
+/*
+struct IP_header
+{
+    uint8_t   ver_hlen;     // Header version and length (dwords). 
+    uint8_t   service;      // Service type. 
+    uint16_t  length;       // Length of datagram (bytes). 
+    uint16_t  ident;        // Unique packet identification. 
+    uint16_t  fragment;     // Flags; Fragment offset. 
+    uint8_t   timetolive;   // Packet time to live (in network). 
+    uint8_t   protocol;     // Upper level protocol (UDP, TCP). 
+    uint16_t  checksum;     // IP header checksum. 
+    uint32_t  src_addr;     // Source IP address. 
+    uint32_t  dest_addr;    // Destination IP address. 
+};
+*/
 
 struct IP_header
 {
-    uint8_t   ver_hlen;     /* Header version and length (dwords). */
-    uint8_t   service;      /* Service type. */
-    uint16_t  length;       /* Length of datagram (bytes). */
-    uint16_t  ident;        /* Unique packet identification. */
-    uint16_t  fragment;     /* Flags; Fragment offset. */
-    uint8_t   timetolive;   /* Packet time to live (in network). */
-    uint8_t   protocol;     /* Upper level protocol (UDP, TCP). */
-    uint16_t  checksum;     /* IP header checksum. */
-    uint32_t  src_addr;     /* Source IP address. */
-    uint32_t  dest_addr;    /* Destination IP address. */
+    uint8_t ip_header_len;      // 4-bit header length (in 32-bit words)
+    uint8_t ip_version;         // 4-bit IPv4 version
+    uint8_t ip_tos;             // IP type of service
+    uint16_t ip_total_length;   // Total length
+    uint16_t ip_id;             // Unique identifier
+
+    uint8_t ip_frag_offset : 5; // Fragment offset field
+    uint8_t ip_more_fragment : 1;
+    uint8_t ip_dont_fragment : 1;
+    uint8_t ip_reserved_zero : 1;
+    uint8_t ip_frag_offset1;    //fragment offset
+
+    uint8_t ip_ttl;             // Time to live
+    uint8_t ip_protocol;        // Protocol(TCP,UDP etc)
+    uint16_t ip_checksum;       // IP checksum
+    uint32_t ip_srcaddr;        // Source address
+    uint32_t ip_destaddr;       // Source address
 };
 
 struct UDP_header
@@ -50,4 +72,10 @@ struct DNS_header
     uint16_t answers;
     uint16_t authority;
     uint16_t additional;
+};
+
+struct Ethernet_header {
+    uint8_t dest_addr[6]; /* Destination hardware address */
+    uint8_t src_addr[6];  /* Source hardware address */
+    uint16_t frame_type;    /* Ethernet frame type */
 };
