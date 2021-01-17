@@ -37,8 +37,8 @@ struct IP_header
 
 struct IP_header
 {
-    uint8_t ip_header_len;      // 4-bit header length (in 32-bit words)
-    uint8_t ip_version;         // 4-bit IPv4 version
+    uint8_t ip_header_len:4;      // 4-bit header length (in 32-bit words)
+    uint8_t ip_version:4;         // 4-bit IPv4 version
     uint8_t ip_tos;             // IP type of service
     uint16_t ip_total_length;   // Total length
     uint16_t ip_id;             // Unique identifier
