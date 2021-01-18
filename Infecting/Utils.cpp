@@ -16,27 +16,30 @@ void getAddrInfo(AddressInfo* info)
 	char* localIP;
 	struct hostent* host_entry;
 	in_addr paddr;
+	ULONG ulOutBufLen;
 
 	gethostname(hostName, 255);
 	host_entry = gethostbyname(hostName);
 	localIP = inet_ntoa(*(struct in_addr*)*host_entry->h_addr_list);
 
-	ULONG ulOutBufLen;
 	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 	pAdapterInfo = new IP_ADAPTER_INFO[ulOutBufLen / sizeof(IP_ADAPTER_INFO)];
 	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 
 	PIP_ADDR_STRING next;
 	PIP_ADAPTER_INFO adp = pAdapterInfo;
-
-	while (adp)
+	bool found = false;
+	while (adp && !found)
 	{
 		next = &adp->IpAddressList;
 		while (next)
 		{
 			std::cout << next->IpMask.String << std::endl;
-			if (sizeof(next->IpMask.String) == 16)
+			if (next->IpAddress.String == localIP)
+			{
+				found = true;
 				break;
+			}
 			next = next->Next;
 		}
 		adp = adp->Next;
