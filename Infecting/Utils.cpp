@@ -23,6 +23,14 @@ void getAddrInfo(AddressInfo* info)
 
 	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
 	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
+	IP_ADDR_STRING next = pAdapterInfo->IpAddressList;
+	while (next.Next != NULL)
+	{
+		std::cout << next.IpMask.String << std::endl;
+		if (sizeof(next.IpMask.String) == 16)
+			break;
+		next = *next.Next;
+	}
 
 	paddr.S_un.S_addr  = ~((inet_addr(pAdapterInfo->IpAddressList.IpMask.String) | inet_addr(localIP)) ^ inet_addr(localIP));
 
