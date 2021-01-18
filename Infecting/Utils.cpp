@@ -11,7 +11,7 @@
 
 void getAddrInfo(AddressInfo* info)
 {
-	PIP_ADAPTER_INFO pAdapterInfo = new IP_ADAPTER_INFO;
+	PIP_ADAPTER_INFO pAdapterInfo{};
 	char hostName[255];
 	char* localIP;
 	struct hostent* host_entry;
@@ -21,17 +21,26 @@ void getAddrInfo(AddressInfo* info)
 	host_entry = gethostbyname(hostName);
 	localIP = inet_ntoa(*(struct in_addr*)*host_entry->h_addr_list);
 
-	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+	ULONG ulOutBufLen;
 	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
-	IP_ADDR_STRING next = pAdapterInfo->IpAddressList;
-	while (next.Next != NULL)
-	{
-		std::cout << next.IpMask.String << std::endl;
-		if (sizeof(next.IpMask.String) == 16)
-			break;
-		next = *next.Next;
-	}
+	pAdapterInfo = new IP_ADAPTER_INFO[ulOutBufLen / sizeof(IP_ADAPTER_INFO)];
+	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 
+	PIP_ADDR_STRING next;
+	PIP_ADAPTER_INFO adp = pAdapterInfo;
+
+	while (adp)
+	{
+		next = &adp->IpAddressList;
+		while (next)
+		{
+			std::cout << next->IpMask.String << std::endl;
+			if (sizeof(next->IpMask.String) == 16)
+				break;
+			next = next->Next;
+		}
+		adp = adp->Next;
+	}
 	paddr.S_un.S_addr  = ~((inet_addr(pAdapterInfo->IpAddressList.IpMask.String) | inet_addr(localIP)) ^ inet_addr(localIP));
 
 	memcpy((char*)info->hostName, hostName, 255);
