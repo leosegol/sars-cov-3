@@ -12,38 +12,49 @@
 void getAddrInfo(AddressInfo* info)
 {
 	PIP_ADAPTER_INFO pAdapterInfo{};
+	PIP_ADAPTER_INFO adp;
+	PIP_ADDR_STRING address;
+
+	in_addr paddr;
+	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+
 	char hostName[255];
 	char* localIP;
 	struct hostent* host_entry;
-	in_addr paddr;
-	ULONG ulOutBufLen;
+
+	bool found = false;
 
 	gethostname(hostName, 255);
 	host_entry = gethostbyname(hostName);
 	localIP = inet_ntoa(*(struct in_addr*)*host_entry->h_addr_list);
 
-	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
-	pAdapterInfo = new IP_ADAPTER_INFO[ulOutBufLen / sizeof(IP_ADAPTER_INFO)];
-	GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
+	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
+	{
+		std::cout << "buffer overflow " << ulOutBufLen << std::endl;
 
-	PIP_ADDR_STRING next;
-	PIP_ADAPTER_INFO adp = pAdapterInfo;
-	bool found = false;
+		pAdapterInfo = (PIP_ADAPTER_INFO)malloc(ulOutBufLen);
+
+		if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
+			std::cout << "buffer overflow " << ulOutBufLen << std::endl;
+	}
+
+	adp = pAdapterInfo;
+
 	while (adp && !found)
 	{
-		next = &adp->IpAddressList;
-		while (next)
+		address = &adp->IpAddressList;
+		while (address)
 		{
-			std::cout << next->IpMask.String << std::endl;
-			if (next->IpAddress.String == localIP)
+			if (address->IpAddress.String == localIP)
 			{
 				found = true;
 				break;
 			}
-			next = next->Next;
+			address = address->Next;
 		}
 		adp = adp->Next;
 	}
+
 	paddr.S_un.S_addr  = ~((inet_addr(pAdapterInfo->IpAddressList.IpMask.String) | inet_addr(localIP)) ^ inet_addr(localIP));
 
 	memcpy((char*)info->hostName, hostName, 255);
