@@ -19,7 +19,7 @@ struct DHCP_header
     char sname[64];     // server's name or DNS address
     char file[128];     // type of boot
     char magic[4];      // DHCP options
-    char opt[3];        // DHCP options
+    char opt[55];        // DHCP options
 };
 /*
 struct IP_header
