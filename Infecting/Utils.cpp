@@ -30,12 +30,11 @@ void getAddrInfo(AddressInfo* info)
 
 	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
 	{
+#if _DEBUG
 		std::cout << "buffer overflow " << ulOutBufLen << std::endl;
-
+#endif
 		pAdapterInfo = (PIP_ADAPTER_INFO)malloc(ulOutBufLen);
-
-		if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
-			std::cout << "buffer overflow " << ulOutBufLen << std::endl;
+		GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 	}
 
 	adp = pAdapterInfo;

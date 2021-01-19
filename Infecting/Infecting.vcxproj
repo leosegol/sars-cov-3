@@ -144,7 +144,7 @@
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DHCPAttacks.cpp" />
+    <ClCompile Include="Spoofing.cpp" />
     <ClCompile Include="Headers.cpp" />
     <ClCompile Include="Packets.cpp" />
     <ClCompile Include="Utils.cpp" />

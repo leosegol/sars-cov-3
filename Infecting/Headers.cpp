@@ -17,7 +17,7 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader)
 	p_d_dhcp->hops = 0;
 	p_d_dhcp->xid = htonl(123456789);
 	p_d_dhcp->secs = htons(0);
-	p_d_dhcp->flags = htons(0x01);
+	p_d_dhcp->flags = htons(0x00);
 	//p_d_dhcp->ciaddr = 0;
 	//p_d_dhcp->yiaddr = 0;
 	//p_d_dhcp->siaddr = 0;
