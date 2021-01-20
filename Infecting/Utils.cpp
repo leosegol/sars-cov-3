@@ -47,6 +47,7 @@ void getAddrInfo(AddressInfo* info)
 		{
 			if (!strcmp(address->IpAddress.String, localIP))
 			{
+				info->htype = adp->Type;
 				found = true;
 				break;
 			}

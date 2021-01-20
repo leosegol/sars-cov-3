@@ -3,16 +3,21 @@
 #include <iostream>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "Ws2_32.lib")
 #include <time.h>  
 
-void createDHCPdiscoverHeader(char* packet, size_t pHeader)
+void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 {
 	srand(time(NULL));
 	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];
 	memset(p_d_dhcp, 0, sizeof(DHCP_header));
 	p_d_dhcp->op = 1;
-	p_d_dhcp->htype = 1;
+	if(htype == IF_TYPE_IEEE80211)
+		p_d_dhcp->htype = 1;
+	else
+		p_d_dhcp->htype = 2;
 	p_d_dhcp->hlen = 6;
 	p_d_dhcp->hops = 0;
 	p_d_dhcp->xid = htonl(123456789);
@@ -53,7 +58,7 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader)
 	p_d_dhcp->opt[17] = 255; // end of opt
 }
 
-void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, char* src, char* dst)
+void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst)
 {
 	IP_header* p_ip = (IP_header*)&packet[pHeader];
 	p_ip->ip_header_len = 5;
@@ -68,8 +73,8 @@ void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, char* s
 	p_ip->ip_more_fragment = 0;
 	p_ip->ip_ttl = 64;
 	p_ip->ip_protocol = IPPROTO_UDP;
-	inet_pton(AF_INET, src, &(p_ip->ip_srcaddr));
-	inet_pton(AF_INET, dst, &(p_ip->ip_destaddr));
+	inet_pton(AF_INET, (char*)src, &(p_ip->ip_srcaddr));
+	inet_pton(AF_INET, (char*)dst, &(p_ip->ip_destaddr));
 	p_ip->ip_checksum = 0;
 }
 

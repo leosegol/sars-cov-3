@@ -31,7 +31,7 @@ void startDHCPStarvation(AddressInfo& info)
 
 	dst.sin_family = AF_INET;
 	dst.sin_port = htons(67);								/* difine the destination */
-	inet_pton(AF_INET, info.broadcast, &dst.sin_addr.s_addr);
+	inet_pton(AF_INET, (char*)info.broadcast, &dst.sin_addr.s_addr);
 
 	char* raw_packet = new char[65536];
 
@@ -66,6 +66,5 @@ int main()
 		info.broadcast 
 		<< std::endl;
 #endif
-
 	startDHCPStarvation(info);
 }

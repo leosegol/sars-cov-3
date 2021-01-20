@@ -28,6 +28,7 @@ void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 
 	createDHCPdiscoverHeader(
 			raw_packet,
-			sizeof(IP_header) + sizeof(UDP_header)
+			sizeof(IP_header) + sizeof(UDP_header),
+			info.htype
 	);
 }

@@ -6,10 +6,11 @@
 
 struct AddressInfo
 {
-	char hostName[255];
-	char ipv4[16];
-	char netmask[16];
-	char broadcast[16];
+	uint8_t hostName[255];
+	uint8_t ipv4[16];
+	uint8_t netmask[16];
+	uint8_t broadcast[16];
+	uint8_t htype;
 };
 
 void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);

@@ -2,6 +2,7 @@
 #include "Packets.h"
 #include <iostream>
 #include <winsock2.h>
+
 struct DHCP_header
 {
     uint8_t op;         // 1 is request, 2 is reply
@@ -19,7 +20,7 @@ struct DHCP_header
     char sname[64];     // server's name or DNS address
     char file[128];     // type of boot
     char magic[4];      // DHCP options
-    char opt[55];        // DHCP options
+    char opt[55];       // DHCP options
 };
 /*
 struct IP_header
@@ -82,7 +83,7 @@ struct Ethernet_header {
     uint16_t frame_type;    /* Ethernet frame type */
 };
 
-void createDHCPdiscoverHeader(char* packet, size_t pHeader);
-void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, char* src, char* dst);
+void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype);
+void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst);
 void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t dst_port, uint16_t p_size);
 void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_t* src_mac);
