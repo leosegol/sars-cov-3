@@ -66,3 +66,8 @@ void getAddrInfo(AddressInfo* info)
 
 	free(pAdapterInfo);
 }
+
+bool checkForDHCP(DHCP_header& hDHCP)
+{
+	return !strcmp(hDHCP.magic, "DHCP");
+}

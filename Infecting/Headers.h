@@ -2,6 +2,7 @@
 #include "Packets.h"
 #include <iostream>
 #include <winsock2.h>
+#include <stdint.h>
 
 struct DHCP_header
 {
@@ -87,3 +88,7 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype);
 void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst);
 void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t dst_port, uint16_t p_size);
 void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_t* src_mac);
+
+void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP);
+void getIPheader(char* packet, size_t pHeader, IP_header& rIP);
+void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);

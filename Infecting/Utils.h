@@ -4,3 +4,5 @@
 #include <iostream>
 
 void getAddrInfo(AddressInfo* info);
+
+bool checkForDHCP(DHCP_header& hDHCP);

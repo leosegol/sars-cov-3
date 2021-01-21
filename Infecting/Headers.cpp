@@ -113,6 +113,27 @@ void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_
 	p_ether->frame_type = 0x0800;
 }
 
+void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP)
+{
+	DHCP_header* hDHCP = (DHCP_header*)&packet[pHeader];
+	if(hDHCP)
+		rDHCP = *hDHCP;
+}
+
+void getIPheader(char* packet, size_t pHeader, IP_header& rIP)
+{
+	IP_header* hIP = (IP_header*)&packet[pHeader];
+	if(hIP)
+		rIP = *hIP;
+}
+
+void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP)
+{
+	UDP_header* hUDP = (UDP_header*)&packet[pHeader];
+	if(hUDP)
+		rUDP = *hUDP;
+}
+
 
 
 
