@@ -102,7 +102,10 @@ void startDHCPSpoofing(AddressInfo& info)
 		{
 			std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
 			if (checkForDHCP(pDHCP))
-				std::cout << "recv: " << pDHCP.chaddr << std::endl;
+			{
+				std::cout << "recv: ";
+				printHex(pDHCP.chaddr, sizeof pDHCP.chaddr);
+			}
 		}
 			delete[] raw_packet;
 	}

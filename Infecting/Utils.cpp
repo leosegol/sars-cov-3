@@ -69,12 +69,26 @@ void getAddrInfo(AddressInfo* info)
 
 bool checkForDHCP(DHCP_header& hDHCP)
 {
-	const char magic[5] = "DHCP";
-	std::cout << sizeof hDHCP.magic << std::endl;
+	char magic[5] = { 0 };
+	magic[0] = 0x63;
+	magic[1] = 0x82;
+	magic[2] = 0x53;
+	magic[3] = 0x63;
 	for (int i = 0; i < sizeof DHCP_header::magic; i++)
 	{
 		if (magic[i] != hDHCP.magic[i])
 			return false;
 	}
 	return true;
+}
+
+void printHex(char* str, size_t size)
+{
+	uint8_t num;
+	for (int i = 0; i < size; i++)
+	{
+		num = str[i];
+		std::cout << std::hex << static_cast<unsigned>(num);
+	}
+	std::cout << std::endl;
 }

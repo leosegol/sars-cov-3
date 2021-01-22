@@ -1,4 +1,5 @@
 #include "Spoofing.h"
+#include "Headers.h"
 #include "Utils.h"
 #include <thread>
 int main()
@@ -21,5 +22,7 @@ int main()
 #endif
 
 	//std::thread starvation(startDHCPStarvation, info);	// start a thread for filling the address's pool
-	startDHCPSpoofing(info);												// of the dhcp server
+													// of the dhcp server
+	
+	startDHCPSpoofing(info);
 }
