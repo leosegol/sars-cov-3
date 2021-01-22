@@ -69,5 +69,12 @@ void getAddrInfo(AddressInfo* info)
 
 bool checkForDHCP(DHCP_header& hDHCP)
 {
-	return !strcmp(hDHCP.magic, "DHCP");
+	const char magic[5] = "DHCP";
+	std::cout << sizeof hDHCP.magic << std::endl;
+	for (int i = 0; i < sizeof DHCP_header::magic; i++)
+	{
+		if (magic[i] != hDHCP.magic[i])
+			return false;
+	}
+	return true;
 }

@@ -8,7 +8,6 @@ int main()
 
 	AddressInfo info{};
 	getAddrInfo(&info);
-
 #if _DEBUG			
 	std::cout <<
 		info.hostName

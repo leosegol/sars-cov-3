@@ -8,6 +8,8 @@
 
 #include <time.h>
 #include <iostream>
+#include <Mstcpip.h>
+#include <winsock2.h>
 #include <WS2tcpip.h>
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
@@ -55,38 +57,53 @@ void startDHCPStarvation(AddressInfo& info)
 void startDHCPSpoofing(AddressInfo& info)
 {
 	SOCKET s;
-	in_addr packetInfo;
+	sockaddr_in sockinfo;
+	sockaddr_in dst;
+	int size = sizeof(dst);
 
 	int optval = 1;
+	int in;
+	int error;
 
 	DHCP_header pDHCP{};
 	UDP_header pUDP{};
 	IP_header pIP{};
-	
-	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); //Create a RAW socket
 
-#if _DEBUG
+	sockinfo.sin_addr.s_addr = inet_addr((const char*)info.ipv4);
+	sockinfo.sin_family = AF_INET;
+	sockinfo.sin_port = htons(0);
+
+	
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
+
 	if (s == SOCKET_ERROR)
 		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-#endif
+
+	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
+
+	if(setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
+		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
+	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
 
 	while (1)
 	{
-		sockaddr_in dst;
-		int size = sizeof(dst);
-
 		char* raw_packet = new char[65536];
+		memset(raw_packet, 0, 65536);
 
-		recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
 
+		if (error == SOCKET_ERROR)
+			std::cout << "recv error: " << WSAGetLastError() << std::endl;
 
+		//std::cout << inet_ntoa(dst.sin_addr) << std::endl;
 		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
-
-		std::cout << "recv IP: " << pIP.ip_id << std::endl;
-
-		if (checkForDHCP(pDHCP))
-			std::cout << "recv: " << pDHCP.chaddr << std::endl;
-
-		delete[] raw_packet;
+		sockinfo.sin_addr.s_addr = pIP.ip_destaddr;
+		if (ntohs(pUDP.dst_port) == 67)
+		{
+			std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
+			if (checkForDHCP(pDHCP))
+				std::cout << "recv: " << pDHCP.chaddr << std::endl;
+		}
+			delete[] raw_packet;
 	}
 }
