@@ -8,3 +8,5 @@ void getAddrInfo(AddressInfo* info);
 bool checkForDHCP(DHCP_header& hDHCP);
 
 void printHex(char* str, size_t size);
+
+uint32_t createRandomIP(AddressInfo& info);

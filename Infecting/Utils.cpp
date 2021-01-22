@@ -92,3 +92,18 @@ void printHex(char* str, size_t size)
 	}
 	std::cout << std::endl;
 }
+
+uint32_t createRandomIP(AddressInfo& info)
+{
+	uint32_t subnet, ip, temp, randomIP;
+	subnet = inet_addr((const char*)info.netmask);
+	ip = inet_addr((const char*)info.ipv4);
+	srand(time(NULL));
+
+	do
+	{
+		temp = ~subnet | (subnet | ip) ^ subnet;
+		randomIP = htonl(ntohl(temp) ^ (rand() % ntohl(~subnet))) ^ ip;
+	} while (randomIP == ~((subnet | ip) ^ ip));
+	return randomIP;
+}
