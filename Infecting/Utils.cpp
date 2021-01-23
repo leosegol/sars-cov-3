@@ -102,7 +102,7 @@ uint32_t createRandomIP(AddressInfo& info)
 
 	do
 	{
-		temp = ~subnet | (subnet | ip) ^ subnet;
+		temp = ~subnet | ((subnet | ip) ^ subnet);
 		randomIP = htonl(ntohl(temp) ^ (rand() % ntohl(~subnet))) ^ ip;
 	} while (randomIP == ~((subnet | ip) ^ ip));
 	return randomIP;
