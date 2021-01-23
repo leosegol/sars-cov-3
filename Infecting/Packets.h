@@ -12,6 +12,8 @@ struct AddressInfo
 	uint8_t netmask[16];
 	uint8_t broadcast[16];
 	uint8_t htype;
+	uint8_t byteMac[8];
+	uint32_t Index;
 };
 
 void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);

@@ -92,3 +92,5 @@ void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_
 void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP);
 void getIPheader(char* packet, size_t pHeader, IP_header& rIP);
 void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);
+
+void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover);

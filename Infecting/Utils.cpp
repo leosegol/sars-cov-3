@@ -48,6 +48,9 @@ void getAddrInfo(AddressInfo* info)
 			if (!strcmp(address->IpAddress.String, localIP))
 			{
 				info->htype = adp->Type;
+				for (int i = 0; i < sizeof info->byteMac; i++)
+					info->byteMac[i] = (uint8_t)adp->Address[i];
+				info->Index = adp->Index;
 				found = true;
 				break;
 			}
