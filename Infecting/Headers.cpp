@@ -12,12 +12,14 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 {
 	srand(time(NULL));
 	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];
+
 	memset(p_d_dhcp, 0, sizeof(DHCP_header));
+
 	p_d_dhcp->op = 1;
-	if((int)htype == MIB_IF_TYPE_ETHERNET)
-		p_d_dhcp->htype = 1;
-	else
+	if((int)htype == IF_TYPE_IEEE80211)
 		p_d_dhcp->htype = 6;
+	else
+		p_d_dhcp->htype = 1;
 	p_d_dhcp->hlen = 6;
 	p_d_dhcp->hops = 0;
 	p_d_dhcp->xid = htonl(123456789);
@@ -33,32 +35,32 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 	p_d_dhcp->chaddr[3] = rand() % 255 + 1;
 	p_d_dhcp->chaddr[4] = rand() % 255 + 1;
 	p_d_dhcp->chaddr[5] = rand() % 255 + 1;
-	//p_d_dhcp->sname = { 0 };
+	//p_d_dhcp->sname = 0;
 	//p_d_dhcp->file = { 0 };
 	p_d_dhcp->magic[0] = 99;
 	p_d_dhcp->magic[1] = 130;
 	p_d_dhcp->magic[2] = 83;
 	p_d_dhcp->magic[3] = 99;
-	p_d_dhcp->opt[0] = 53; // type of packet
+	p_d_dhcp->opt[0] = 53;						// type of packet
 	p_d_dhcp->opt[1] = 1;
 	p_d_dhcp->opt[2] = 1;
-	p_d_dhcp->opt[3] = 61;	// htype
+	p_d_dhcp->opt[3] = 61;						// htype
 	p_d_dhcp->opt[4] = 7;
-	if ((int)htype == MIB_IF_TYPE_ETHERNET)
-		p_d_dhcp->opt[5] = 1;
-	else
+	if ((int)htype == IF_TYPE_IEEE80211)
 		p_d_dhcp->opt[5] = 6;
+	else
+		p_d_dhcp->opt[5] = 1;
 	p_d_dhcp->opt[6] = p_d_dhcp->chaddr[0];
 	p_d_dhcp->opt[7] = p_d_dhcp->chaddr[1];
 	p_d_dhcp->opt[8] = p_d_dhcp->chaddr[2];
 	p_d_dhcp->opt[9] = p_d_dhcp->chaddr[3];
 	p_d_dhcp->opt[10] = p_d_dhcp->chaddr[4];
 	p_d_dhcp->opt[11] = p_d_dhcp->chaddr[5];
-	p_d_dhcp->opt[12] = 57; //max packet size
+	p_d_dhcp->opt[12] = 57;						//max packet size
 	p_d_dhcp->opt[13] = 2;
-	p_d_dhcp->opt[14] = 1500;
-	//p_d_dhcp->opt[16]; taken
-	p_d_dhcp->opt[17] = 255; // end of opt
+	p_d_dhcp->opt[14] = htons(1500);
+	//p_d_dhcp->opt[15]; taken
+	p_d_dhcp->opt[16] = 255;					// end of opt
 }
 
 void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst)
@@ -109,6 +111,27 @@ void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_
 	p_ether->src_addr[5] = src_mac[5];
 
 	p_ether->frame_type = 0x0800;
+}
+
+void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP)
+{
+	DHCP_header* hDHCP = (DHCP_header*)&packet[pHeader];
+	if(hDHCP)
+		rDHCP = *hDHCP;
+}
+
+void getIPheader(char* packet, size_t pHeader, IP_header& rIP)
+{
+	IP_header* hIP = (IP_header*)&packet[pHeader];
+	if(hIP)
+		rIP = *hIP;
+}
+
+void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP)
+{
+	UDP_header* hUDP = (UDP_header*)&packet[pHeader];
+	if(hUDP)
+		rUDP = *hUDP;
 }
 
 

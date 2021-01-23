@@ -141,9 +141,11 @@
   <ItemGroup>
     <ClInclude Include="Headers.h" />
     <ClInclude Include="Packets.h" />
+    <ClInclude Include="Spoofing.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="Spoofing.cpp" />
     <ClCompile Include="Headers.cpp" />
     <ClCompile Include="Packets.cpp" />

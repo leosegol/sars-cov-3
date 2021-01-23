@@ -38,7 +38,7 @@ void getAddrInfo(AddressInfo* info)
 	}
 	
 	adp = pAdapterInfo;
-	address = &adp->IpAddressList;
+	address = &pAdapterInfo->IpAddressList;
 
 	while (adp && !found)
 	{
@@ -60,8 +60,50 @@ void getAddrInfo(AddressInfo* info)
 
 	memcpy((char*)info->hostName, hostName, 255);
 	memcpy((char*)info->ipv4, localIP, 16);
+	memcpy((char*)info->noIP, "0.0.0.0", 16);
 	memcpy((char*)info->netmask, address->IpMask.String, 16);
 	memcpy((char*)info->broadcast, inet_ntoa(paddr), 16);
 
 	free(pAdapterInfo);
+}
+
+bool checkForDHCP(DHCP_header& hDHCP)
+{
+	char magic[5] = { 0 };
+	magic[0] = 0x63;
+	magic[1] = 0x82;
+	magic[2] = 0x53;
+	magic[3] = 0x63;
+	for (int i = 0; i < sizeof DHCP_header::magic; i++)
+	{
+		if (magic[i] != hDHCP.magic[i])
+			return false;
+	}
+	return true;
+}
+
+void printHex(char* str, size_t size)
+{
+	uint8_t num;
+	for (int i = 0; i < size; i++)
+	{
+		num = str[i];
+		std::cout << std::hex << static_cast<unsigned>(num);
+	}
+	std::cout << std::endl;
+}
+
+uint32_t createRandomIP(AddressInfo& info)
+{
+	uint32_t subnet, ip, temp, randomIP;
+	subnet = inet_addr((const char*)info.netmask);
+	ip = inet_addr((const char*)info.ipv4);
+	srand(time(NULL));
+
+	do
+	{
+		temp = ~subnet | ((subnet | ip) ^ subnet);
+		randomIP = htonl(ntohl(temp) ^ (rand() % ntohl(~subnet))) ^ ip;
+	} while (randomIP == ~((subnet | ip) ^ ip));
+	return randomIP;
 }
