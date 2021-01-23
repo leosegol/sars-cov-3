@@ -14,10 +14,10 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];
 	memset(p_d_dhcp, 0, sizeof(DHCP_header));
 	p_d_dhcp->op = 1;
-	if(htype == IF_TYPE_IEEE80211)
+	if((int)htype == MIB_IF_TYPE_ETHERNET)
 		p_d_dhcp->htype = 1;
 	else
-		p_d_dhcp->htype = 2;
+		p_d_dhcp->htype = 6;
 	p_d_dhcp->hlen = 6;
 	p_d_dhcp->hops = 0;
 	p_d_dhcp->xid = htonl(123456789);
@@ -44,7 +44,10 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 	p_d_dhcp->opt[2] = 1;
 	p_d_dhcp->opt[3] = 61;	// htype
 	p_d_dhcp->opt[4] = 7;
-	p_d_dhcp->opt[5] = 1;
+	if ((int)htype == MIB_IF_TYPE_ETHERNET)
+		p_d_dhcp->opt[5] = 1;
+	else
+		p_d_dhcp->opt[5] = 6;
 	p_d_dhcp->opt[6] = p_d_dhcp->chaddr[0];
 	p_d_dhcp->opt[7] = p_d_dhcp->chaddr[1];
 	p_d_dhcp->opt[8] = p_d_dhcp->chaddr[2];

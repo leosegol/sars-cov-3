@@ -64,7 +64,13 @@ int main()
 		info.netmask 
 		<< "\n" << 
 		info.broadcast 
+		<< "\n" <<
+		int(info.htype)
 		<< std::endl;
 #endif
-	startDHCPStarvation(info);
+	while (1)
+	{
+		startDHCPStarvation(info);
+		Sleep(100);
+	}
 }
