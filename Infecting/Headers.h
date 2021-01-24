@@ -1,5 +1,6 @@
 #pragma once
 #include "Packets.h"
+
 #include <iostream>
 #include <winsock2.h>
 #include <stdint.h>
@@ -93,4 +94,4 @@ void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP);
 void getIPheader(char* packet, size_t pHeader, IP_header& rIP);
 void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);
 
-void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover);
+void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP);

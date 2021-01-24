@@ -1,7 +1,16 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
+#define HAVE_REMOTE
+#define WPCAP
+
+#include "Headers.h"
+#include "Packets.h"
 #include "Utils.h"
+
+#include <pcap.h>
+#pragma comment(lib, "wpcap.lib")
+#pragma comment(lib, "packet.lib")
 
 #include <winsock2.h>
 #include <iphlpapi.h>
@@ -14,6 +23,8 @@ void getAddrInfo(AddressInfo* info)
 	PIP_ADAPTER_INFO pAdapterInfo{};
 	PIP_ADAPTER_INFO adp{};
 	PIP_ADDR_STRING address{};
+
+	FIXED_INFO* pFixedInfo{};
 
 	in_addr paddr;
 	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
@@ -30,12 +41,14 @@ void getAddrInfo(AddressInfo* info)
 
 	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
 	{
-#if _DEBUG
-		std::cout << "buffer overflow" << std::endl;
-#endif
 		pAdapterInfo = (PIP_ADAPTER_INFO)malloc(ulOutBufLen);
 		GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
 	}
+
+	if (GetNetworkParams(pFixedInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
+		pFixedInfo = (FIXED_INFO*)malloc(ulOutBufLen);
+
+
 	
 	adp = pAdapterInfo;
 	address = &pAdapterInfo->IpAddressList;
@@ -47,7 +60,10 @@ void getAddrInfo(AddressInfo* info)
 		{
 			if (!strcmp(address->IpAddress.String, localIP))
 			{
+				std::cout << adp->AdapterName << std::endl;
 				info->htype = adp->Type;
+				memcpy((char*)info->gateWay, adp->GatewayList.IpAddress.String, 16);
+				memcpy((char*)info->AdaptersName, adp->AdapterName, 260);
 				for (int i = 0; i < sizeof info->byteMac; i++)
 					info->byteMac[i] = (uint8_t)adp->Address[i];
 				info->Index = adp->Index;
@@ -66,7 +82,7 @@ void getAddrInfo(AddressInfo* info)
 	memcpy((char*)info->noIP, "0.0.0.0", 16);
 	memcpy((char*)info->netmask, address->IpMask.String, 16);
 	memcpy((char*)info->broadcast, inet_ntoa(paddr), 16);
-
+	memcpy((char*)info->domainName, pFixedInfo->DomainName, 4);
 	free(pAdapterInfo);
 }
 
@@ -82,7 +98,7 @@ bool checkForDHCP(DHCP_header& hDHCP)
 		if (magic[i] != hDHCP.magic[i])
 			return false;
 	}
-	return true;
+	return hDHCP.op == 1;
 }
 
 void printHex(char* str, size_t size)
@@ -94,6 +110,13 @@ void printHex(char* str, size_t size)
 		std::cout << std::hex << static_cast<unsigned>(num);
 	}
 	std::cout << std::endl;
+}
+
+void printIP(uint32_t byteIP)
+{
+	sockaddr_in toStr;
+	toStr.sin_addr.s_addr = byteIP;
+	std::cout << inet_ntoa(toStr.sin_addr) << std::endl;
 }
 
 uint32_t createRandomIP(AddressInfo& info)
@@ -109,4 +132,28 @@ uint32_t createRandomIP(AddressInfo& info)
 		randomIP = htonl(ntohl(temp) ^ (rand() % ntohl(~subnet))) ^ ip;
 	} while (randomIP == ~((subnet | ip) ^ ip));
 	return randomIP;
+}
+
+const char* getDeviceName(AddressInfo& info)
+{
+	pcap_if_t* alldevs;
+	pcap_if_t* d;
+	std::string name = "";
+	int i = 0;
+	char errbuf[PCAP_ERRBUF_SIZE];
+
+	if (pcap_findalldevs_ex((char*)PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
+	{
+		std::cout << "error finding devs" << std::endl;
+		return NULL;
+	}
+
+	for (d = alldevs; d != NULL; d = d->next)
+	{
+		name = std::string(d->name);
+			if(name.substr(name.find_first_of("{"))._Equal(std::string((char*)info.AdaptersName)))
+				return d->name;
+	}
+
+	return NULL;
 }

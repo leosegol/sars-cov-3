@@ -22,7 +22,7 @@ int main()
 #endif
 
 	//std::thread starvation(startDHCPStarvation, info);	// start a thread for filling the address's pool
-													// of the dhcp server
-	sendDiscoverPacket(info);
+															// of the dhcp server
+	
 	startDHCPSpoofing(info);
 }
