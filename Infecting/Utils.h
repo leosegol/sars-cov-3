@@ -15,3 +15,5 @@ void printIP(uint32_t byteIP);
 uint32_t createRandomIP(AddressInfo& info);
 
 const char* getDeviceName(AddressInfo& info);
+
+uint16_t in_checksum(unsigned short* ptr, int nbytes);

@@ -11,13 +11,17 @@
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
 #pragma comment(lib, "Ws2_32.lib")
-#include <time.h>  
+
+#include <random>
+
 
 void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 {
-	srand(time(NULL));
-	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	std::uniform_int_distribution<std::mt19937::result_type> dist255(1, 255);
 
+	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];
 	memset(p_d_dhcp, 0, sizeof(DHCP_header));
 
 	p_d_dhcp->op = 1;
@@ -34,12 +38,12 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 	//p_d_dhcp->yiaddr = 0;
 	//p_d_dhcp->siaddr = 0;
 	//p_d_dhcp->giaddr = 0;
-	p_d_dhcp->chaddr[0] = rand() % 255 + 1;
-	p_d_dhcp->chaddr[1] = rand() % 255 + 1;
-	p_d_dhcp->chaddr[2] = rand() % 255 + 1;
-	p_d_dhcp->chaddr[3] = rand() % 255 + 1;
-	p_d_dhcp->chaddr[4] = rand() % 255 + 1;
-	p_d_dhcp->chaddr[5] = rand() % 255 + 1;
+	p_d_dhcp->chaddr[0] = (unsigned char)dist255(rng);
+	p_d_dhcp->chaddr[1] = (unsigned char)dist255(rng);
+	p_d_dhcp->chaddr[2] = (unsigned char)dist255(rng);
+	p_d_dhcp->chaddr[3] = (unsigned char)dist255(rng);
+	p_d_dhcp->chaddr[4] = (unsigned char)dist255(rng);
+	p_d_dhcp->chaddr[5] = (unsigned char)dist255(rng);
 	//p_d_dhcp->sname = 0;
 	//p_d_dhcp->file = { 0 };
 	p_d_dhcp->magic[0] = 99;
@@ -68,24 +72,25 @@ void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 	p_d_dhcp->opt[16] = 255;					// end of opt
 }
 
-void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst)
+void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst, uint16_t id)
 {
 	IP_header* p_ip = (IP_header*)&packet[pHeader];
 	p_ip->ip_header_len = 5;
 	p_ip->ip_version = 4;
 	p_ip->ip_tos = 0;
 	p_ip->ip_total_length = htons(total_size);
-	p_ip->ip_id = htons(2);
+	p_ip->ip_id = id;
 	p_ip->ip_frag_offset = 0;
 	p_ip->ip_frag_offset1 = 0;
 	p_ip->ip_reserved_zero = 0;
-	p_ip->ip_dont_fragment = 1;
+	p_ip->ip_dont_fragment = 0;
 	p_ip->ip_more_fragment = 0;
 	p_ip->ip_ttl = 64;
 	p_ip->ip_protocol = IPPROTO_UDP;
 	inet_pton(AF_INET, (char*)src, &(p_ip->ip_srcaddr));
 	inet_pton(AF_INET, (char*)dst, &(p_ip->ip_destaddr));
 	p_ip->ip_checksum = 0;
+	p_ip->ip_checksum = in_checksum((uint16_t*)p_ip, sizeof(IP_header));
 }
 
 void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t dst_port, uint16_t p_size)
@@ -202,13 +207,59 @@ void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover,
 	p_d_dhcp->opt[32] = 2;
 	p_d_dhcp->opt[33] = 54;
 	p_d_dhcp->opt[34] = 4;
-	*((uint32_t*)&p_d_dhcp->opt[35]) = inet_addr((const char*)info.gateWay);
+	*((uint32_t*)&p_d_dhcp->opt[35]) = inet_addr((const char*)info.ipv4);
 	//p_d_dhcp->opt[36];
 	//p_d_dhcp->opt[37];				// taken
 	//p_d_dhcp->opt[38];
 	p_d_dhcp->opt[39] = 255;
+
+	//-------------------------------
+
+	p_d_dhcp->opt[0] = 53;		// Message Type
+	p_d_dhcp->opt[1] = 1;
+	p_d_dhcp->opt[2] = 2;
+
+	p_d_dhcp->opt[3] = 54;		// DHCP server's ip
+	p_d_dhcp->opt[4] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[5]) = inet_addr((const char*)info.ipv4);
+	//p_d_dhcp->opt[6];
+	//p_d_dhcp->opt[7];				// taken
+	//p_d_dhcp->opt[8];
+
+	p_d_dhcp->opt[9] = 51;		// lease time
+	p_d_dhcp->opt[10] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[11]) = htonl(3600);
+	//p_d_dhcp->opt[12];
+	//p_d_dhcp->opt[13];				// taken
+	//p_d_dhcp->opt[14];
+
+	p_d_dhcp->opt[15] = 1;		// netMask
+	p_d_dhcp->opt[16] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[17]) = inet_addr((const char*)info.netmask);
+	//p_d_dhcp->opt[18];
+	//p_d_dhcp->opt[19];					// taken
+	//p_d_dhcp->opt[20];
+
+	p_d_dhcp->opt[21] = 3;		// router ip
+	p_d_dhcp->opt[22] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[23]) = inet_addr((const char*)info.ipv4); // tempotal
+	//p_d_dhcp->opt[24];
+	//p_d_dhcp->opt[25];				// taken
+	//p_d_dhcp->opt[26];
+
+	p_d_dhcp->opt[27] = 6;		// DNS
+	p_d_dhcp->opt[28] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[29]) = inet_addr((const char*)info.ipv4);
+	//p_d_dhcp->opt[40];
+	//p_d_dhcp->opt[32];				// taken
+	//p_d_dhcp->opt[32];
+
+	p_d_dhcp->opt[33] = 15;		// Domain name
+	p_d_dhcp->opt[34] = 4;
+	*((uint32_t*)&p_d_dhcp->opt[35]) = htonl(*(uint32_t*)&info.domainName);
+	//p_d_dhcp->opt[36];
+	//p_d_dhcp->opt[37];				// taken
+	//p_d_dhcp->opt[38];
+
+	p_d_dhcp->opt[39] = 255;
 }
-
-
-
-

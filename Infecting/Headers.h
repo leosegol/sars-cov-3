@@ -24,21 +24,6 @@ struct DHCP_header
     char magic[4];      // DHCP options
     char opt[55];       // DHCP options
 };
-/*
-struct IP_header
-{
-    uint8_t   ver_hlen;     // Header version and length (dwords). 
-    uint8_t   service;      // Service type. 
-    uint16_t  length;       // Length of datagram (bytes). 
-    uint16_t  ident;        // Unique packet identification. 
-    uint16_t  fragment;     // Flags; Fragment offset. 
-    uint8_t   timetolive;   // Packet time to live (in network). 
-    uint8_t   protocol;     // Upper level protocol (UDP, TCP). 
-    uint16_t  checksum;     // IP header checksum. 
-    uint32_t  src_addr;     // Source IP address. 
-    uint32_t  dest_addr;    // Destination IP address. 
-};
-*/
 
 struct IP_header
 {
@@ -80,13 +65,13 @@ struct DNS_header
 };
 
 struct Ethernet_header {
-    uint8_t dest_addr[6]; /* Destination hardware address */
-    uint8_t src_addr[6];  /* Source hardware address */
+    uint8_t dest_addr[6];   /* Destination hardware address */
+    uint8_t src_addr[6];    /* Source hardware address */
     uint16_t frame_type;    /* Ethernet frame type */
 };
 
 void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype);
-void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst);
+void createIPv4Header(char* packet, size_t pHeader, uint16_t total_size, uint8_t* src, uint8_t* dst, uint16_t id);
 void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t dst_port, uint16_t p_size);
 void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_t* src_mac);
 

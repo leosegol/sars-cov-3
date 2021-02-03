@@ -8,16 +8,23 @@
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
 
-
+#include <random>
 
 void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 {
+
+
+	std::random_device dev;
+	std::mt19937 rng(dev());
+	std::uniform_int_distribution<std::mt19937::result_type> rand(1, 65536);
+
 	createIPv4Header(
 			raw_packet,
 			0,
 			sizeof(IP_header) + sizeof(DHCP_header) + sizeof(UDP_header),
 			info.noIP,
-			info.broadcast
+			info.broadcast,
+			htons((uint16_t)rand(rng))
 	);
 
 	createUDPHeader(
@@ -34,13 +41,14 @@ void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 	);
 }
 
-void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP , AddressInfo& info)
+void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP , AddressInfo& info)
 {
 	DHCP_header hDHCP = *(DHCP_header*)pDHCP;
 	sockaddr_in toStr;
 	toStr.sin_addr.s_addr = createRandomIP(info);
 
-	createEthernetHeader(raw_packet,
+	createEthernetHeader(
+		raw_packet,
 		0,
 		(uint8_t*)hDHCP.chaddr,
 		info.byteMac
@@ -51,7 +59,8 @@ void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP , AddressInfo& info)
 		sizeof(Ethernet_header),
 		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(DHCP_header) + sizeof(UDP_header) -14,
 		info.gateWay,
-		(uint8_t*)inet_ntoa(toStr.sin_addr)
+		(uint8_t*)inet_ntoa(toStr.sin_addr),
+		0
 	);
 
 	createUDPHeader(
@@ -60,7 +69,6 @@ void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP , AddressInfo& info)
 		67, 68,
 		sizeof(UDP_header) + sizeof(DHCP_header)
 	);
-	std::cout << "from inside " << htons(((UDP_header*)(raw_packet + sizeof(Ethernet_header) + sizeof(IP_header)))->dst_port) << std::endl;
 
 	createDHCPOfferHeader(
 		raw_packet,

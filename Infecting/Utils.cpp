@@ -60,7 +60,6 @@ void getAddrInfo(AddressInfo* info)
 		{
 			if (!strcmp(address->IpAddress.String, localIP))
 			{
-				std::cout << adp->AdapterName << std::endl;
 				info->htype = adp->Type;
 				memcpy((char*)info->gateWay, adp->GatewayList.IpAddress.String, 16);
 				memcpy((char*)info->AdaptersName, adp->AdapterName, 260);
@@ -156,4 +155,28 @@ const char* getDeviceName(AddressInfo& info)
 	}
 
 	return NULL;
+}
+
+uint16_t in_checksum(unsigned short* ptr, int nbytes)
+{
+	register long sum;
+	unsigned short oddbyte;
+	register short answer;
+
+	sum = 0;
+	while (nbytes > 1) {
+		sum += *ptr++;
+		nbytes -= 2;
+	}
+	if (nbytes == 1) {
+		oddbyte = 0;
+		*((u_char*)&oddbyte) = *(u_char*)ptr;
+		sum += oddbyte;
+	}
+
+	sum = (sum >> 16) + (sum & 0xffff);
+	sum = sum + (sum >> 16);
+	answer = (SHORT)~sum;
+
+	return answer;
 }

@@ -19,4 +19,4 @@ struct AddressInfo
 };
 
 void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);
-void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, AddressInfo& info);
+void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info);
