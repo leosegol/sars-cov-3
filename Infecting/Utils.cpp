@@ -191,10 +191,7 @@ uint8_t getDHCPtype(DHCP_header& hDHCP)
 {
 	for (int i = 0; i < sizeof DHCP_header::opt; i++)
 		if (hDHCP.opt[i] == 53)
-		{
-			std::cout << std::hex << static_cast<unsigned>(hDHCP.opt[i + 2]);
 			return hDHCP.opt[i + 2];
-		}
 }
 
 uint32_t getRequestedIP(DHCP_header& hDHCP)

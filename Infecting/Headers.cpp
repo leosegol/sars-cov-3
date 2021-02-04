@@ -143,6 +143,13 @@ void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP)
 		rUDP = *hUDP;
 }
 
+void getEthernetheader(char* packet, size_t pHeader, Ethernet_header& rEther)
+{
+	Ethernet_header* hEther = (Ethernet_header*)&packet[pHeader];
+	if (hEther)
+		rEther = *hEther;
+}
+
 void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP)
 {
 	DHCP_header* p_d_dhcp = (DHCP_header*)&packet[pHeader];

