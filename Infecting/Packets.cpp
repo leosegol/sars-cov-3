@@ -194,23 +194,29 @@ int createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP,
 		sizeof(DNS_record) * dns.questions;
 }
 
-void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP)
+void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP, Ethernet_header& pEther)
 {
-	getIPheader(
+	getEthernetheader(
 		packet,
 		0,
+		pEther
+	);
+
+	getIPheader(
+		packet,
+		sizeof(Ethernet_header),
 		pIP
 	);
 
 	getUDPheader(
 		packet,
-		sizeof(IP_header),
+		sizeof(Ethernet_header) + sizeof(IP_header),
 		pUDP
 	);
 
 	getDHCPheader(
 		packet,
-		sizeof(IP_header) + sizeof(UDP_header),
+		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
 		pDHCP
 	);
 }
