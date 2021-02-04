@@ -64,6 +64,33 @@ struct DNS_header
     uint16_t additional;
 };
 
+struct DNS_question
+{
+    uint16_t qtype;
+    uint16_t qclass;
+};
+
+struct DNS_answer
+{
+    uint16_t type;
+    uint16_t _class;
+    uint32_t ttl;
+    uint16_t data_len;
+};
+
+struct DNS_record
+{
+    uint8_t* name;
+    DNS_answer* resource;
+    uint8_t* rdata;
+};
+
+struct DNS_query
+{
+    uint8_t* name;
+    DNS_question* question;
+};
+
 struct Ethernet_header {
     uint8_t dest_addr[6];   /* Destination hardware address */
     uint8_t src_addr[6];    /* Source hardware address */
@@ -81,3 +108,5 @@ void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);
 
 void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP);
 void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, AddressInfo& info);
+
+void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS ,uint32_t dstIP);

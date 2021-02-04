@@ -23,14 +23,12 @@ int main()
 	getAddrInfo(&info);
 	
 
-// start of starvation and spoofing 
-
-	//startDHCPStarvation((LPVOID)&info);
+	// DHCP spoofing
 
 	hThread = CreateThread(
 		NULL,
 		0,
-		startDHCPSpoofing,
+		startSpoofing,
 		(LPVOID)&info,
 		0,
 		&hThreadID

@@ -300,3 +300,15 @@ void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, Ad
 
 	p_d_dhcp->opt[39] = 255;
 }
+
+void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS, uint32_t dstIP)
+{
+	DNS_header* p_dns = (DNS_header*)&packet[pHeader];
+
+	p_dns->id = rDNS.id;
+	p_dns->flags = htons(0x8000);
+	p_dns->questions = rDNS.questions;
+	p_dns->answers = htons(1);
+	p_dns->authority = 0;
+	p_dns->additional = 0;
+}

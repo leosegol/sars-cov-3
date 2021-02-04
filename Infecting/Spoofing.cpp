@@ -95,7 +95,7 @@ int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 	return 0;
 }
 
-int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* sock,AddressInfo& info)
+int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* sock, AddressInfo& info)
 {
 	createDHCPackPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
 
@@ -111,6 +111,10 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 	return 0;
 }
 
+int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info)
+{
+	return 0;
+}
 
 DWORD WINAPI startDHCPStarvation(LPVOID info)
 {
@@ -123,8 +127,7 @@ DWORD WINAPI startDHCPStarvation(LPVOID info)
 	return 1;
 }
 
-
-DWORD WINAPI startDHCPSpoofing(LPVOID info)
+DWORD WINAPI startSpoofing(LPVOID info)
 {
 	SOCKET s;
 	sockaddr_in sockinfo;
