@@ -15,3 +15,9 @@ void printIP(uint32_t byteIP);
 uint32_t createRandomIP(AddressInfo& info);
 
 const char* getDeviceName(AddressInfo& info);
+
+uint16_t in_checksum(unsigned short* ptr, int nbytes);
+
+uint8_t getDHCPtype(DHCP_header& hDHCP);
+
+uint32_t getRequestedIP(DHCP_header& hDHCP);

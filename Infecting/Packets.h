@@ -18,5 +18,7 @@ struct AddressInfo
 	uint32_t Index;
 };
 
-void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);
-void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, AddressInfo& info);
+void createDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);
+void createDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info);
+void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info);
+void createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther, AddressInfo& info);
