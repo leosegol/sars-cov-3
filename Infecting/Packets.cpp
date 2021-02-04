@@ -10,7 +10,7 @@
 
 #include <random>
 
-void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
+void createDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 {
 
 
@@ -41,12 +41,13 @@ void CreateDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 	);
 }
 
-void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP , AddressInfo& info)
+void createDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP , AddressInfo& info)
 {
 	DHCP_header hDHCP = *(DHCP_header*)pDHCP;
+	IP_header hIP = *(IP_header*)pIP;
 	sockaddr_in toStr;
 	toStr.sin_addr.s_addr = createRandomIP(info);
-
+	printIP(toStr.sin_addr.s_addr);
 	createEthernetHeader(
 		raw_packet,
 		0,
@@ -57,10 +58,10 @@ void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP , AddressInf
 	createIPv4Header(
 		raw_packet,
 		sizeof(Ethernet_header),
-		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(DHCP_header) + sizeof(UDP_header) -14,
+		sizeof(IP_header) + sizeof(DHCP_header) + sizeof(UDP_header),
 		info.gateWay,
 		(uint8_t*)inet_ntoa(toStr.sin_addr),
-		0
+		hIP.ip_id
 	);
 
 	createUDPHeader(
@@ -76,6 +77,44 @@ void CreateDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP , AddressInf
 		hDHCP,
 		info,
 		toStr.sin_addr.s_addr
+	);
+}
+
+void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info)
+{
+	DHCP_header hDHCP = *(DHCP_header*)pDHCP;
+	IP_header hIP = *(IP_header*)pIP;
+	sockaddr_in toStr;
+	toStr.sin_addr.s_addr = getRequestedIP(*(DHCP_header*)pDHCP);
+
+	createEthernetHeader(
+		raw_packet,
+		0,
+		(uint8_t*)hDHCP.chaddr,
+		info.byteMac
+	);
+
+	createIPv4Header(
+		raw_packet,
+		sizeof(Ethernet_header),
+		sizeof(IP_header) + sizeof(DHCP_header) + sizeof(UDP_header),
+		info.gateWay,
+		(uint8_t*)inet_ntoa(toStr.sin_addr),
+		hIP.ip_id
+	);
+
+	createUDPHeader(
+		raw_packet,
+		sizeof(Ethernet_header) + sizeof(IP_header),
+		67, 68,
+		sizeof(UDP_header) + sizeof(DHCP_header)
+	);
+
+	createDHCPackHeader(
+		raw_packet,
+		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
+		hDHCP,
+		info
 	);
 }
 

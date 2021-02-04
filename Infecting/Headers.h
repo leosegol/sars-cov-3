@@ -80,3 +80,4 @@ void getIPheader(char* packet, size_t pHeader, IP_header& rIP);
 void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);
 
 void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP);
+void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, AddressInfo& info);

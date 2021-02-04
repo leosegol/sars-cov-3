@@ -25,7 +25,7 @@ int main()
 
 // start of starvation and spoofing 
 
-	startDHCPStarvation((LPVOID)&info);
+	//startDHCPStarvation((LPVOID)&info);
 
 	hThread = CreateThread(
 		NULL,

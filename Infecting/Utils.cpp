@@ -60,7 +60,6 @@ void getAddrInfo(AddressInfo* info)
 		{
 			if (!strcmp(address->IpAddress.String, localIP))
 			{
-				info->htype = adp->Type;
 				memcpy((char*)info->gateWay, adp->GatewayList.IpAddress.String, 16);
 				memcpy((char*)info->AdaptersName, adp->AdapterName, 260);
 				for (int i = 0; i < sizeof info->byteMac; i++)
@@ -87,17 +86,24 @@ void getAddrInfo(AddressInfo* info)
 
 bool checkForDHCP(DHCP_header& hDHCP)
 {
-	char magic[5] = { 0 };
-	magic[0] = 0x63;
-	magic[1] = 0x82;
-	magic[2] = 0x53;
-	magic[3] = 0x63;
-	for (int i = 0; i < sizeof DHCP_header::magic; i++)
+	try
 	{
-		if (magic[i] != hDHCP.magic[i])
-			return false;
+		char magic[5] = { 0 };
+		magic[0] = 0x63;
+		magic[1] = 0x82;
+		magic[2] = 0x53;
+		magic[3] = 0x63;
+		for (int i = 0; i < sizeof DHCP_header::magic; i++)
+		{
+			if (magic[i] != hDHCP.magic[i])
+				return false;
+		}
+		return hDHCP.op == 1;
 	}
-	return hDHCP.op == 1;
+	catch (...)
+	{
+		return false;
+	}
 }
 
 void printHex(char* str, size_t size)
@@ -179,4 +185,25 @@ uint16_t in_checksum(unsigned short* ptr, int nbytes)
 	answer = (SHORT)~sum;
 
 	return answer;
+}
+
+uint8_t getDHCPtype(DHCP_header& hDHCP)
+{
+	for (int i = 0; i < sizeof DHCP_header::opt; i++)
+		if (hDHCP.opt[i] == 53)
+		{
+			std::cout << std::hex << static_cast<unsigned>(hDHCP.opt[i + 2]);
+			return hDHCP.opt[i + 2];
+		}
+}
+
+uint32_t getRequestedIP(DHCP_header& hDHCP)
+{
+	int i;
+	for (i = 0; i < sizeof(DHCP_header::opt); i++)
+	{
+		if (hDHCP.opt[i] == 50)
+			return *(uint32_t*)&hDHCP.opt[i + 2];
+	}
+	return 0;
 }
