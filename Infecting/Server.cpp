@@ -23,6 +23,8 @@ int main()
 
 	//std::thread starvation(startDHCPStarvation, info);	// start a thread for filling the address's pool
 															// of the dhcp server
-	
-	startDHCPSpoofing(info);
+	startDHCPStarvation(info);
+	std::cin.get();
+	std::thread spoof(startDHCPSpoofing, info);
+	sendDiscoverPacket(info);
 }
