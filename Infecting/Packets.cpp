@@ -118,7 +118,7 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 	);
 }
 
-void createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther,AddressInfo& info)
+int createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther,AddressInfo& info)
 {
 	DNS_header dns = *(DNS_header*)pDNS;
 	IP_header ip = *(IP_header*)pIP;
@@ -131,7 +131,7 @@ void createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP
 	DNS_record record;
 
 	toStr1.sin_addr.s_addr = ip.ip_destaddr;
-	toStr1.sin_addr.s_addr = ip.ip_srcaddr;
+	toStr2.sin_addr.s_addr = ip.ip_srcaddr;
 	DNS_record* records = (DNS_record*)malloc(dns.questions*sizeof(DNS_record));
 
 	uint16_t ptr = 0b1100000000000000;	// saying its a pointer
@@ -188,6 +188,10 @@ void createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP
 		(const char*)records,
 		sizeof(DNS_record) * dns.questions
 	);
+
+	return sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + 
+		sizeof(DNS_header) + sizeof(DNS_query) * dns.questions + 
+		sizeof(DNS_record) * dns.questions;
 }
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP)

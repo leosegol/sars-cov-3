@@ -21,4 +21,4 @@ struct AddressInfo
 void createDHCPDiscoverPacket(char* raw_packet, AddressInfo& info);
 void createDHCPOfferPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info);
 void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& info);
-void createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther, AddressInfo& info);
+int createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther, AddressInfo& info);

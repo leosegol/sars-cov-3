@@ -105,6 +105,8 @@ void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_
 void getDHCPheader(char* packet, size_t pHeader, DHCP_header& rDHCP);
 void getIPheader(char* packet, size_t pHeader, IP_header& rIP);
 void getUDPheader(char* packet, size_t pHeader, UDP_header& rUDP);
+void getDNSheader(char* packet, size_t pHeader, DNS_header& rDNS);
+void getEthernetheader(char* packet, size_t pHeader, Ethernet_header& rEther);
 
 void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP);
 void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, AddressInfo& info);

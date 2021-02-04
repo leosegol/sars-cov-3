@@ -28,7 +28,7 @@ int main()
 	hThread = CreateThread(
 		NULL,
 		0,
-		startSpoofing,
+		startDHCPSpoofing,
 		(LPVOID)&info,
 		0,
 		&hThreadID
@@ -36,7 +36,8 @@ int main()
 	
 // DNS spoofing
 
-	/*supposed to be dns*/
+	startDNSHijacking(LPVOID(&info));
+
 
 	WaitForMultipleObjects(1, &hThread, TRUE, INFINITE);
 	
