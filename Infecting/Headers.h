@@ -111,4 +111,4 @@ void getEthernetheader(char* packet, size_t pHeader, Ethernet_header& rEther);
 void createDHCPOfferHeader(char* packet, size_t pHeader, DHCP_header& pDiscover, AddressInfo& info, uint32_t randomIP);
 void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, AddressInfo& info);
 
-void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS ,uint32_t dstIP);
+void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS);

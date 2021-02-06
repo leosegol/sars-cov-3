@@ -21,3 +21,5 @@ uint16_t in_checksum(unsigned short* ptr, int nbytes);
 uint8_t getDHCPtype(DHCP_header& hDHCP);
 
 uint32_t getRequestedIP(DHCP_header& hDHCP);
+
+uint8_t* getARPinformation(uint32_t ipv4, AddressInfo& info); // ty daniel

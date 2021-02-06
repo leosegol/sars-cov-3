@@ -205,4 +205,27 @@ uint32_t getRequestedIP(DHCP_header& hDHCP)
 	return 0;
 }
 
+uint8_t* getARPinformation(uint32_t ipv4, AddressInfo& info)
+{
+	DWORD i;
+	PMIB_IPNETTABLE pIpNetTable = NULL;
+	DWORD dwSize = 0;
+	DWORD dwRetVal = 0;
+	DWORD dwResult;
+
+	dwResult = GetIpNetTable(NULL, &dwSize, 0);
+	if (dwResult == ERROR_INSUFFICIENT_BUFFER)
+		pIpNetTable = (MIB_IPNETTABLE*)malloc(dwSize);
+
+	/* Now that we know the size, lets use GetIpNetTable() */
+	if ((dwRetVal = GetIpNetTable(pIpNetTable, &dwSize, 0)) == NO_ERROR)
+		if (pIpNetTable->dwNumEntries > 0)
+			for (i = 0; i < pIpNetTable->dwNumEntries; i++)
+				if (pIpNetTable->table[i].dwAddr == ipv4)
+					return pIpNetTable->table[i].bPhysAddr;
+	free(pIpNetTable);
+	return 0;
+}
+
+
 

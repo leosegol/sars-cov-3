@@ -1,3 +1,6 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include "Spoofing.h"
 #include "Headers.h"
 #include "Utils.h"
@@ -23,22 +26,19 @@ int main()
 	getAddrInfo(&info);
 	
 
-	// DHCP spoofing
+	startSpoofing((LPVOID)&info);
 
+	// DHCP spoofing
+	/*
 	hThread = CreateThread(
 		NULL,
 		0,
-		startDHCPSpoofing,
+		startSpoofing,
 		(LPVOID)&info,
 		0,
 		&hThreadID
 	);
-	
-// DNS spoofing
-
-	startDNSHijacking(LPVOID(&info));
-
 
 	WaitForMultipleObjects(1, &hThread, TRUE, INFINITE);
-	
+	*/
 }

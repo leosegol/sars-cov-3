@@ -99,7 +99,7 @@ void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t d
 	p_udp->src_port = htons(src_port);
 	p_udp->dst_port = htons(dst_port);
 	p_udp->len = htons(p_size);
-	p_udp->chksum = 0;
+	p_udp->chksum = in_checksum((uint16_t*)p_udp, p_size);
 }
 
 void createEthernetHeader(char* packet, size_t pHeader, uint8_t* dst_mac, uint8_t* src_mac)
@@ -315,14 +315,14 @@ void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, Ad
 	p_d_dhcp->opt[39] = 255;
 }
 
-void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS, uint32_t dstIP)
+void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS)
 {
 	DNS_header* p_dns = (DNS_header*)&packet[pHeader];
 
 	p_dns->id = rDNS.id;
-	p_dns->flags = htons(0x8000);
+	p_dns->flags = 0x8000;
 	p_dns->questions = rDNS.questions;
-	p_dns->answers = htons(1);
-	p_dns->authority = 0;
+	p_dns->answers = rDNS.questions;
+	p_dns->authority = rDNS.authority;
 	p_dns->additional = 0;
 }

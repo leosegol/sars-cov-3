@@ -10,5 +10,4 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info);
 
 DWORD WINAPI startDHCPStarvation(LPVOID info);
-DWORD WINAPI startDHCPSpoofing(LPVOID info);
-DWORD WINAPI startDNSHijacking(LPVOID info);
+DWORD WINAPI startSpoofing(LPVOID info);

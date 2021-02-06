@@ -10,6 +10,8 @@
 
 #include <random>
 
+void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
+
 void createDHCPDiscoverPacket(char* raw_packet, AddressInfo& info)
 {
 
@@ -118,105 +120,140 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 	);
 }
 
-int createDNSResponsePacket(char* raw_packet, void* pDNS, void* pIP, void* pUDP, void* pQuery, void* pEther,AddressInfo& info)
+size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 {
-	DNS_header dns = *(DNS_header*)pDNS;
-	IP_header ip = *(IP_header*)pIP;
-	UDP_header udp = *(UDP_header*)pIP;
-	DNS_query* query = (DNS_query*)pQuery;
-	Ethernet_header ether = *(Ethernet_header*)pEther;
+	DNS_header dns{};
+	IP_header ip{};
+	UDP_header udp{};
 
 	sockaddr_in toStr1;
 	sockaddr_in toStr2;
-	DNS_record record;
 
-	toStr1.sin_addr.s_addr = ip.ip_destaddr;
-	toStr2.sin_addr.s_addr = ip.ip_srcaddr;
-	DNS_record* records = (DNS_record*)malloc(dns.questions*sizeof(DNS_record));
+	//DNS_record* records = (DNS_record*)malloc(ntohs(dns.questions) * sizeof(DNS_record));
+
+	DNS_record rec{};
+	DNS_record* records = &rec;
+	DNS_query que{};
+	DNS_query* query = &que;
+
+	size_t qsize = 0;
+	size_t rsize = 0;
 
 	uint16_t ptr = 0b1100000000000000;	// saying its a pointer
 
-	for (int i = 0; i < dns.questions; i++)
+	DNS_answer answer{};
+
+
+	ip = *(IP_header*)qDNS;
+	udp = *(UDP_header*)&qDNS[sizeof(IP_header)];
+	getDNSheader(qDNS, sizeof(IP_header) + sizeof(UDP_header), dns);
+
+	toStr1.sin_addr.s_addr = ip.ip_destaddr;
+	toStr2.sin_addr.s_addr = ip.ip_srcaddr;
+	char* destaddr = inet_ntoa(toStr2.sin_addr);
+
+	for (int i = 0; i < ntohs(dns.questions); i++)
 	{
-		records[i].name = (uint8_t*)(ptr | (sizeof(DNS_header) + sizeof(DNS_query) * i));	// pointing to the name
-		records[i].resource->type = htons(1);
-		records[i].resource->_class = htons(1);
-		records[i].resource->ttl = htonl(100);
-		records[i].resource->data_len = htons(4);
-		records[i].rdata = (uint8_t*)inet_addr((const char*)info.ipv4);
+		query[i].name = (uint8_t*)&qDNS[sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize];
+		query[i].question = (DNS_question*)&qDNS[sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) +
+			qsize + (strlen((const char*)query[i].name) + 1)];
+		qsize += (strlen((const char*)query[i].name) + 1) + sizeof(DNS_question);
 	}
+
+
+	answer.type = htons(1);
+	answer._class = htons(1);
+	answer.ttl = htonl(100);
+	answer.data_len = htons(4);
+
+	for (int i = 0; i < ntohs(dns.questions); i++)
+	{										/* 12 is the number of bytes untill the first name */
+		if(i > 0)
+		records[i].name = (uint8_t*)htons((ptr | (12 + strlen((const char*)query[i-1].name) + 1) + sizeof(DNS_question)));	// pointing to the name
+		records[i].name = (uint8_t*)htons((ptr | 12));
+		records[i].resource = &answer;
+		*((uint32_t*)&records[i].rdata) = inet_addr((const char*)info.ipv4);
+		rsize +=  htons(answer.data_len) + sizeof(DNS_answer) + sizeof(uint8_t*);
+	}
+
+	uint8_t* mac = getARPinformation(ip.ip_srcaddr, info);
+	if (!mac)
+		return 0;
+
 
 	createEthernetHeader(
 		raw_packet,
 		0,
-		ether.src_addr,
-		ether.dest_addr
+		mac,
+		info.byteMac
 	);
 
 	createIPv4Header(
 		raw_packet,
 		sizeof(Ethernet_header),
-		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + sizeof(DNS_query)*dns.questions + sizeof(DNS_record)*dns.questions,
-		(uint8_t*)inet_ntoa(toStr1.sin_addr),
-		(uint8_t*)inet_ntoa(toStr2.sin_addr),
+		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize,
+		info.ipv4,
+		(uint8_t*)destaddr,
 		ip.ip_id
 	);
-
-	createUDPHeader(
-		raw_packet,
-		sizeof(Ethernet_header) + sizeof(IP_header),
-		udp.dst_port,
-		udp.src_port,
-		sizeof(UDP_header) + sizeof(DNS_header) + sizeof(DNS_query) * dns.questions + sizeof(DNS_record) * dns.questions
-	);
+	std::cout << "size: " << qsize << std::endl;
 
 	createDNSResponseHeader(
 		raw_packet,
 		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
-		dns,
-		inet_addr((const char*)info.ipv4)
+		dns
+	);
+	
+	for (int i = 0; i < ntohs(dns.questions); i++)
+	{
+		memcpy(&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header)],
+			query[i].name, strlen((const char*)query[i].name) + 1);
+
+		memcpy((char*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) +
+			(sizeof(DNS_question) * i) + (strlen((const char*)query[i].name) + 1)], query[i].question, sizeof(DNS_question));
+	}
+
+	size_t recsize = 4 + 1 + sizeof(DNS_answer);
+	uint32_t nip = inet_addr((const char*)info.ipv4);
+	for (int i = 0; i < ntohs(dns.questions); i++)
+	{
+		memcpy((uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + recsize*i],
+			&(records[i].name), sizeof(uint8_t*));
+		memcpy((uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + recsize * i + sizeof(uint16_t)],
+			(uint8_t*)&answer, sizeof(DNS_answer));
+		*((uint32_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + recsize * i
+			+ sizeof(uint16_t) + sizeof(DNS_answer) -2]) = nip;
+	}
+
+	createUDPHeader(
+		raw_packet,
+		sizeof(Ethernet_header) + sizeof(IP_header),
+		ntohs(udp.dst_port),
+		ntohs(udp.src_port),
+		sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize
 	);
 
-	memcpy(
-		&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header)],
-		(const char*)query,
-		sizeof(DNS_query) * dns.questions
-	);
-
-	memcpy(
-		&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + sizeof(DNS_query) * dns.questions],
-		(const char*)records,
-		sizeof(DNS_record) * dns.questions
-	);
-
-	return sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + 
-		sizeof(DNS_header) + sizeof(DNS_query) * dns.questions + 
-		sizeof(DNS_record) * dns.questions;
+	return sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) +
+		sizeof(DNS_header) + qsize + rsize;
 }
 
-void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP, Ethernet_header& pEther)
+void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP)
 {
-	getEthernetheader(
-		packet,
-		0,
-		pEther
-	);
-
 	getIPheader(
 		packet,
-		sizeof(Ethernet_header),
+		0,
 		pIP
 	);
 
 	getUDPheader(
 		packet,
-		sizeof(Ethernet_header) + sizeof(IP_header),
+		sizeof(IP_header),
 		pUDP
 	);
 
 	getDHCPheader(
 		packet,
-		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
+		sizeof(IP_header) + sizeof(UDP_header),
 		pDHCP
 	);
 }
