@@ -8,6 +8,8 @@
 #include "Packets.h"
 #include "Utils.h"
 
+#include <algorithm>
+
 #include <pcap.h>
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "packet.lib")
@@ -17,6 +19,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #pragma comment(lib, "IPHLPAPI.lib")
+
+#include <string>
 
 void getAddrInfo(AddressInfo* info)
 {
@@ -78,6 +82,7 @@ void getAddrInfo(AddressInfo* info)
 	memcpy((char*)info->hostName, hostName, 255);
 	memcpy((char*)info->ipv4, localIP, 16);
 	memcpy((char*)info->noIP, "0.0.0.0", 16);
+	memcpy((char*)info->DNS_IP, "8.8.8.8", 16);
 	memcpy((char*)info->netmask, address->IpMask.String, 16);
 	memcpy((char*)info->broadcast, inet_ntoa(paddr), 16);
 	memcpy((char*)info->domainName, pFixedInfo->DomainName, 4);
@@ -205,7 +210,7 @@ uint32_t getRequestedIP(DHCP_header& hDHCP)
 	return 0;
 }
 
-uint8_t* getARPinformation(uint32_t ipv4, AddressInfo& info)
+uint8_t* getARPinformation(uint32_t ipv4)
 {
 	DWORD i;
 	PMIB_IPNETTABLE pIpNetTable = NULL;
@@ -221,10 +226,59 @@ uint8_t* getARPinformation(uint32_t ipv4, AddressInfo& info)
 	if ((dwRetVal = GetIpNetTable(pIpNetTable, &dwSize, 0)) == NO_ERROR)
 		if (pIpNetTable->dwNumEntries > 0)
 			for (i = 0; i < pIpNetTable->dwNumEntries; i++)
-				if (pIpNetTable->table[i].dwAddr == ipv4)
+			{
+				//std::cout << pIpNetTable->table[i].dwAddr << ',';
+				//printHex((char*)pIpNetTable->table[i].bPhysAddr, 6);
+				if (pIpNetTable->table[i].dwAddr == ipv4
+					|| hexToIP(pIpNetTable->table[i].dwAddr) == ipv4)
 					return pIpNetTable->table[i].bPhysAddr;
+			}
 	free(pIpNetTable);
 	return 0;
+}
+
+bool checkForWantedSite(char* cSite, AddressInfo& info)
+{
+	std::string domain = fromDNSnameToDomain(cSite);
+	for (int i = 0; i < HIJACKED_SITES; i++)
+	{
+		if (domain.compare(std::string(info.DNS_sites[i])) == 0)
+			return true;
+	}
+	return false;
+}
+
+std::string fromDNSnameToDomain(char* DNSname)
+{
+	std::string flat = "";
+	std::string DC(DNSname);
+	int nZone;
+	while (DC.length())
+	{
+		nZone = DC[0];
+		if (nZone > DC.length())
+			return flat;
+		flat += DC.substr(1, nZone);
+		flat += '.';
+		DC = DC.substr(nZone + 1);
+	}
+	flat = flat.substr(0, flat.length() - 1);
+	return flat;
+}
+
+uint32_t hexToIP(DWORD hexIP)
+{
+	uint8_t* byteIP = (uint8_t*)&hexIP;
+	std::string s;
+	int zone;
+	for (int i = 0; i < 4; i++)
+	{
+		zone = byteIP[i];
+		s += std::to_string(static_cast<unsigned>(zone));
+		s += ".";
+	}
+	s[s.length() - 1] = '\0';
+	return inet_addr(s.c_str());
 }
 
 

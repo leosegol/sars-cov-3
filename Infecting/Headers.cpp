@@ -320,9 +320,9 @@ void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS)
 	DNS_header* p_dns = (DNS_header*)&packet[pHeader];
 
 	p_dns->id = rDNS.id;
-	p_dns->flags = 0x8000;
+	p_dns->flags = htons(0x8180);// | rDNS.flags;
 	p_dns->questions = rDNS.questions;
 	p_dns->answers = rDNS.questions;
-	p_dns->authority = rDNS.authority;
+	p_dns->authority = 0;
 	p_dns->additional = 0;
 }

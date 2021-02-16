@@ -22,4 +22,10 @@ uint8_t getDHCPtype(DHCP_header& hDHCP);
 
 uint32_t getRequestedIP(DHCP_header& hDHCP);
 
-uint8_t* getARPinformation(uint32_t ipv4, AddressInfo& info); // ty daniel
+uint8_t* getARPinformation(uint32_t ipv4); // ty daniel
+
+bool checkForWantedSite(char* cSite, AddressInfo& info);
+
+std::string fromDNSnameToDomain(char* DNSname);
+
+uint32_t hexToIP(DWORD hexIP);
