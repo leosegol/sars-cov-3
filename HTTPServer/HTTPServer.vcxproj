@@ -140,7 +140,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="HTML_file.html" />
-    <None Include="java.js" />
     <None Include="Server.py" />
   </ItemGroup>
   <ItemGroup>

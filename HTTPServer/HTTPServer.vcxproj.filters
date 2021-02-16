@@ -21,9 +21,6 @@
     <None Include="HTML_file.html">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="java.js">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="smartScreenClick.png">
