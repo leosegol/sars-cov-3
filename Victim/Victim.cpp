@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
     if (!mastersIP)
         return 1;
-    addressinfo.sin_addr.s_addr = inet_addr("0.0.0.0");
+    addressinfo.sin_addr.s_addr = getPrivateIP();
     addressinfo.sin_port = htons(666);
     addressinfo.sin_family = AF_INET;
 
