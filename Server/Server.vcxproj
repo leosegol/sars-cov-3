@@ -139,13 +139,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="Input.h" />
-    <ClInclude Include="Socket.h" />
+    <ClInclude Include="Network.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Input.cpp" />
-    <ClCompile Include="Server.cpp" />
-    <ClCompile Include="Socket.cpp" />
+    <ClCompile Include="Master.cpp" />
+    <ClCompile Include="Network.cpp" />
+    <ClCompile Include="Utils.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
