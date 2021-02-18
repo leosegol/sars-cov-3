@@ -25,7 +25,7 @@ uint32_t findMastersIP()
     sockinfo.sin_addr.s_addr = getPrivateIP();
     sockinfo.sin_port = htons(667);
     sockinfo.sin_family = AF_INET;
-
+    
     error = 1;
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error)))
         std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
@@ -39,7 +39,9 @@ uint32_t findMastersIP()
 
     /*wait for the master to ask me to connect*/
     do {
+        memset(buf, 0, 65536);
         error = recvfrom(s, buf, 65536, 0, (sockaddr*)&mastersinfo, &fromlen);
+        std::cout << buf << std::endl;
         if (error < 0)
         {
             std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
