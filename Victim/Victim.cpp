@@ -32,7 +32,8 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
     sockaddr_in addressinfo;
     uint32_t mastersIP = findMastersIP();
-    int opt = 1;
+    int opt;
+
     if (!mastersIP)
         return 1;
     addressinfo.sin_addr.s_addr = getPrivateIP();
@@ -40,10 +41,18 @@ int main(int argc, char** argv)
     addressinfo.sin_family = AF_INET;
 
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)))
+    if(s < 0)
+        std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
+
+    opt = 1;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) < 0)
         std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
-    bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo));
-    listen(s, 1);
+
+    if(bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo)) < 0)
+        std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
+
+    if(listen(s, 1) < 0)
+        std::cout << "Listen error <" << WSAGetLastError() << ">" << std::endl;
     SOCKET master = accept(s, NULL, 0);
     if (!s | !master)
         return 1;
