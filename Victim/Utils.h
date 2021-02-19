@@ -14,3 +14,5 @@ void copyToStartUp(char* filePath);
 void executeStartUpFile();
 
 std::string executeShell(char* command);
+
+void switchDir(char* arg);

