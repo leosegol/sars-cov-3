@@ -11,8 +11,8 @@
 
 uint32_t findMastersIP()
 {
-    sockaddr_in sockinfo;
-    sockaddr_in mastersinfo;
+    sockaddr_in sockinfo{};
+    sockaddr_in mastersinfo{};
     SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s == INVALID_SOCKET)
         std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
@@ -26,7 +26,6 @@ uint32_t findMastersIP()
     sockinfo.sin_port = htons(667);
     sockinfo.sin_family = AF_INET;
 
-    fromlen = sizeof(sockinfo);
 
     error = 1;
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error))<0)
@@ -38,6 +37,8 @@ uint32_t findMastersIP()
     /*fixed messages for my "protocol"*/
     message = "What is your IP?";
     response = "My IP";
+
+    fromlen = sizeof(sockinfo);
 
     /*wait for the master to ask me to connect*/
     do {
