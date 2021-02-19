@@ -1,5 +1,55 @@
+#define _CRT_SECURE_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+
 #include "Utils.h"
-#include <Windows.h>
+
+#pragma comment(lib, "ws2_32.lib")
+
+#include <iphlpapi.h>
+#pragma comment(lib, "IPHLPAPI.lib")
+
+uint32_t broadcastIP()
+{
+	PIP_ADAPTER_INFO pAdapterInfo{};
+	PIP_ADAPTER_INFO adp{};
+	PIP_ADDR_STRING address{};
+
+	ULONG ulOutBufLen = sizeof(IP_ADAPTER_INFO);
+
+	char hostName[255];
+	char* localIP;
+	struct hostent* host_entry;
+
+	bool found = false;
+
+	gethostname(hostName, 255);
+	host_entry = gethostbyname(hostName);
+	localIP = inet_ntoa(*(struct in_addr*)*host_entry->h_addr_list);
+
+	if (GetAdaptersInfo(pAdapterInfo, &ulOutBufLen) == ERROR_BUFFER_OVERFLOW)
+	{
+		pAdapterInfo = (PIP_ADAPTER_INFO)malloc(ulOutBufLen);
+		GetAdaptersInfo(pAdapterInfo, &ulOutBufLen);
+	}
+
+	adp = pAdapterInfo;
+	while (adp && !found)
+	{
+		address = &adp->IpAddressList;
+		while (address)
+		{
+			if (!strcmp(address->IpAddress.String, localIP))
+			{
+				found = true;
+				break;
+			}
+			address = address->Next;
+		}
+		adp = adp->Next;
+	}
+
+	return ~((inet_addr(address->IpMask.String) | inet_addr(localIP)) ^ inet_addr(localIP));
+}
 
 #include <iphlpapi.h>
 #pragma comment(lib, "IPHLPAPI.lib")
@@ -58,7 +108,7 @@ void printVictims(uint32_t* address)
 	int i = 0;
 	in_addr addr;
 
-	nextline = "List of victims:\n";
+	std::cout << "List of victims:\n";
 	while (address[i] != NULL)
 	{
 		addr.s_addr = address[i];
