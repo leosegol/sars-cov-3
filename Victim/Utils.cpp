@@ -69,10 +69,7 @@ std::string executeShell(char* cmd)
 {
     std::string cd = std::string(cmd).substr(0, 2);
     if (cd._Equal("cd"))
-    {
-        switchDir((char*)std::string(cmd).substr(2).c_str());
-        return "";
-    }
+        return switchDir((char*)std::string(cmd).substr(2).c_str());
     std::array<char, 128> buffer;
     std::string result;
     /*i create a pointer to a "file"*/
@@ -89,7 +86,7 @@ std::string executeShell(char* cmd)
     return result;
 }
 
-void switchDir(char* arg)
+std::string switchDir(char* arg)
 {
     std::string subFolderPath;
     WCHAR moduleFilePath[MAX_PATH];
@@ -98,7 +95,6 @@ void switchDir(char* arg)
     char modulePath[MAX_PATH];
     wcstombs(modulePath, moduleFilePath, MAX_PATH);
 
-    std::cout << modulePath << std::endl;
     // Find the backslash in front of the name the last directory.
     std::string::size_type pos = std::string(modulePath).find_last_of("\\");
 
@@ -110,12 +106,14 @@ void switchDir(char* arg)
         //adding the name of the folder
         subFolderPath = std::string(modulePath) + "\\" + &arg[1];
 
-    std::cout << subFolderPath << std::endl;
-
     WCHAR subPath[MAX_PATH];
     mbstowcs(subPath, subFolderPath.c_str(), subFolderPath.size() + 1);
 
     if (_wchdir(subPath))
-        std::cout << "Set dir error <" << GetLastError() << ">" << std::endl;;
+    {
+        std::cout << "Set dir error <" << GetLastError() << ">" << std::endl;
+        return "Error ";
+    }
+    return subFolderPath.c_str();
 }
 

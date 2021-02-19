@@ -15,4 +15,4 @@ void executeStartUpFile();
 
 std::string executeShell(char* command);
 
-void switchDir(char* arg);
+std::string switchDir(char* arg);
