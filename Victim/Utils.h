@@ -16,3 +16,5 @@ void executeStartUpFile();
 std::string executeShell(char* command);
 
 std::string switchDir(char* arg);
+
+void hideConsole();
