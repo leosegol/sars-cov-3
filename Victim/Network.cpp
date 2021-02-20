@@ -23,17 +23,22 @@ uint32_t findMastersIP()
     char* buf = new char[65536];
     int fromlen;
 
-    recvAddr.sin_addr.s_addr = getPrivateIP();
+    recvAddr.sin_addr.s_addr = INADDR_ANY; //getPrivateIP();
     recvAddr.sin_port = htons(667);
     recvAddr.sin_family = AF_INET;
+
+    std::cout << inet_ntoa(recvAddr.sin_addr);
 
     fromlen = sizeof(recvAddr);
 
     error = 1;
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error))<0)
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&error, sizeof(error)) == SOCKET_ERROR)
         std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
 
-    if(bind(s, (sockaddr*)&recvAddr, sizeof recvAddr) < 0)
+    if (setsockopt(s, SOL_SOCKET, SO_BROADCAST, (const char*)&error, sizeof(error)) == SOCKET_ERROR)
+        std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
+
+    if(bind(s, (sockaddr*)&recvAddr, sizeof recvAddr) == SOCKET_ERROR)
         std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
 
     /*fixed messages for my "protocol"*/
@@ -45,7 +50,7 @@ uint32_t findMastersIP()
         ZeroMemory(buf, 65536);
         error = recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen);
         std::cout << buf << std::endl;
-        if (error < 0)
+        if (error == SOCKET_ERROR)
         {
             std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
             goto errorLable;
@@ -53,7 +58,7 @@ uint32_t findMastersIP()
     } while (!std::string(buf)._Equal(message));
 
     error = sendto(s, response.c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr));
-    if (error < 0)
+    if (error == SOCKET_ERROR)
         std::cout << "Send error <" << WSAGetLastError() << ">" << std::endl;
 
 errorLable:
