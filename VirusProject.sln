@@ -3,24 +3,16 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Server", "Server\Server.vcxproj", "{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}"
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Server", "Server\Server.pyproj", "{E3396744-6CC2-4237-B2A8-02237FBC2D77}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|x64 = Debug|x64
-		Debug|x86 = Debug|x86
-		Release|x64 = Release|x64
-		Release|x86 = Release|x86
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Debug|x64.ActiveCfg = Debug|x64
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Debug|x64.Build.0 = Debug|x64
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Debug|x86.ActiveCfg = Debug|Win32
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Debug|x86.Build.0 = Debug|Win32
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Release|x64.ActiveCfg = Release|x64
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Release|x64.Build.0 = Release|x64
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Release|x86.ActiveCfg = Release|Win32
-		{78EF65DA-6FA7-42E9-80CE-D8E1E07CF17A}.Release|x86.Build.0 = Release|Win32
+		{E3396744-6CC2-4237-B2A8-02237FBC2D77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3396744-6CC2-4237-B2A8-02237FBC2D77}.Release|Any CPU.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
