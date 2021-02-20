@@ -1,7 +1,7 @@
 import socket
 
 HTML_FILE = ".\HTML_file.html"
-CLIENT_EXE = ".\Client.cpp"
+CLIENT_EXE = ".\Victim.exe"
 HTTP_URL = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8 \nContent-Length: 0\n Connection: close\n\n"
 
 
@@ -41,7 +41,7 @@ class Server:
 def get_response(data):
     file_data = b""
     print(data)
-    if "client.exe" in data:
+    if "Victim.exe" in data:
         with open(CLIENT_EXE, 'rb') as file:
             file_data += file.read()
         size = len(file_data)
