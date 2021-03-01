@@ -99,6 +99,7 @@ void createUDPHeader(char* packet, size_t pHeader, uint16_t src_port, uint16_t d
 	p_udp->src_port = htons(src_port);
 	p_udp->dst_port = htons(dst_port);
 	p_udp->len = htons(p_size);
+	p_udp->chksum = 0;
 	p_udp->chksum = in_checksum((uint16_t*)p_udp, p_size);
 }
 

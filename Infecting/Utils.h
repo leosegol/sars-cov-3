@@ -16,7 +16,9 @@ uint32_t createRandomIP(AddressInfo& info);
 
 const char* getDeviceName(AddressInfo& info);
 
-uint16_t in_checksum(unsigned short* ptr, int nbytes);
+uint16_t in_checksum(uint16_t* ptr, int nbytes);
+
+uint16_t net_checksum_tcpudp(uint16_t length, uint16_t proto, uint8_t* addrs, uint8_t* buf);
 
 uint8_t getDHCPtype(DHCP_header& hDHCP);
 
@@ -29,3 +31,5 @@ bool checkForWantedSite(char* cSite, AddressInfo& info);
 std::string fromDNSnameToDomain(char* DNSname);
 
 uint32_t hexToIP(DWORD hexIP);
+
+uint32_t in_fcs(uint8_t* packet, int nbytes);

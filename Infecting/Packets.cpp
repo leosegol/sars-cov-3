@@ -138,7 +138,7 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 
 	size_t qsize = 0;
 	size_t rsize = 0;
-
+	size_t frameSize;
 	uint16_t ptr = 0b1100000000000000;	// saying its a pointer
 
 	DNS_answer answer{};
@@ -190,15 +190,6 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 		info.byteMac
 	);
 
-	createIPv4Header(
-		raw_packet,
-		sizeof(Ethernet_header),
-		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize,
-		info.ipv4,
-		(uint8_t*)destaddr,
-		ip.ip_id
-	);
-
 	createDNSResponseHeader(
 		raw_packet,
 		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
@@ -227,20 +218,39 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 			+ sizeof(uint16_t) + sizeof(DNS_answer) -2]) = nip;
 	}
 
+	createIPv4Header(
+		raw_packet,
+		sizeof(Ethernet_header),
+		sizeof(IP_header) + sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize - 4,
+		info.ipv4,
+		(uint8_t*)destaddr,
+		ip.ip_id
+	);
+
 	createUDPHeader(
 		raw_packet,
 		sizeof(Ethernet_header) + sizeof(IP_header),
 		ntohs(udp.dst_port),
 		ntohs(udp.src_port),
-		sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize
+		sizeof(UDP_header) + sizeof(DNS_header) + qsize + rsize -4
 	);
 
-	return sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) +
-		sizeof(DNS_header) + qsize + rsize;
+	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = htonl(net_checksum_tcpudp(udp.len, 17,
+		(uint8_t*)&ip.ip_srcaddr, (uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)]));
+
+	frameSize = sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) +
+		sizeof(DNS_header) + qsize + rsize - 4;
+
+	/*adding fcs to the end of the packet*/
+	*((uint32_t*)(&raw_packet[frameSize])) = htonl(in_fcs((uint8_t*)raw_packet, frameSize));
+
+	return frameSize + 4;
 }
 
 size_t manInTheMiddle(char* raw_packet, uint8_t* mitm_packet, uint8_t* dstMAC, uint16_t dstPort, uint32_t dstIP, AddressInfo& info)
 {	
+	size_t frameSize;
+
 	Ethernet_header* pEther = (Ethernet_header*)mitm_packet;
 	memcpy(pEther->dest_addr, dstMAC, 6);
 	pEther->frame_type = htons(0x0800);
@@ -256,7 +266,10 @@ size_t manInTheMiddle(char* raw_packet, uint8_t* mitm_packet, uint8_t* dstMAC, u
 
 	memcpy(&mitm_packet[sizeof(Ethernet_header)], raw_packet, ntohs(pIP->ip_total_length));
 
-	return ntohs(pIP->ip_total_length) + sizeof(Ethernet_header);
+	frameSize = ntohs(pIP->ip_total_length) + sizeof(Ethernet_header);
+	*((uint32_t*)(&mitm_packet[frameSize])) = htonl(in_fcs((uint8_t*)raw_packet, frameSize));
+
+	return ntohs(pIP->ip_total_length) + sizeof(Ethernet_header) + 4;
 }
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP)

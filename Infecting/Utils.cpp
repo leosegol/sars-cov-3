@@ -4,6 +4,8 @@
 #define HAVE_REMOTE
 #define WPCAP
 
+#define CRC16 0x8005
+
 #include "Headers.h"
 #include "Packets.h"
 #include "Utils.h"
@@ -168,7 +170,39 @@ const char* getDeviceName(AddressInfo& info)
 	return NULL;
 }
 
-uint16_t in_checksum(unsigned short* ptr, int nbytes)
+uint32_t net_checksum_add(int len, uint8_t* buf)
+{
+	uint32_t sum = 0;
+	int i;
+
+	for (i = 0; i < len; i++) {
+		if (i & 1)
+			sum += (uint32_t)buf[i];
+		else
+			sum += (uint32_t)buf[i] << 8;
+	}
+	return sum;
+}
+
+uint16_t net_checksum_finish(uint32_t sum)
+{
+	while (sum >> 16)
+		sum = (sum & 0xFFFF) + (sum >> 16);
+	return ~sum;
+}
+
+uint16_t net_checksum_tcpudp(uint16_t length, uint16_t proto,
+	uint8_t* addrs, uint8_t* buf)
+{
+	uint32_t sum = 0;
+
+	sum += net_checksum_add(length, buf);         // payload
+	sum += net_checksum_add(8, addrs);            // src + dst address
+	sum += proto + length;                        // protocol & length
+	return net_checksum_finish(sum);
+}
+
+uint16_t in_checksum(uint16_t* ptr, int nbytes)
 {
 	register long sum;
 	unsigned short oddbyte;
@@ -191,7 +225,6 @@ uint16_t in_checksum(unsigned short* ptr, int nbytes)
 
 	return answer;
 }
-
 uint8_t getDHCPtype(DHCP_header& hDHCP)
 {
 	for (int i = 0; i < sizeof DHCP_header::opt; i++)
@@ -279,6 +312,23 @@ uint32_t hexToIP(DWORD hexIP)
 	}
 	s[s.length() - 1] = '\0';
 	return inet_addr(s.c_str());
+}
+
+uint32_t in_fcs(uint8_t* packet, int nbytes)
+{
+
+	uint32_t val, crc;
+	uint8_t i;
+
+	crc = 0xFFFFFFFF;
+	while (nbytes--) {
+		val = (crc ^ *packet++) & 0xFF;
+		for (i = 0; i < 8; i++) {
+			val = val & 1 ? (val >> 1) ^ 0xEDB88320 : val >> 1;
+		}
+		crc = val ^ crc >> 8;
+	}
+	return crc ^ 0xFFFFFFFF;
 }
 
 
