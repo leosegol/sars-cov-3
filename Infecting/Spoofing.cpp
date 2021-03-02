@@ -244,11 +244,7 @@ DWORD WINAPI startSpoofing(LPVOID info)
 				responseError = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
 		if (pUDP.dst_port == htons(53)) // Checks for a DNS packet
 			if (pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
-			{
-				std::cout << ntohs(pUDP.src_port) << ":";
-				printIP(pIP.ip_srcaddr);
 				responseError = sendDNSResponse(response_packet, raw_packet, sock, portTable, (*(AddressInfo*)(info)));
-			}
 		if (portTable.find(htons(pUDP.dst_port)) != portTable.end())
 		{
 			int size = manInTheMiddle(

