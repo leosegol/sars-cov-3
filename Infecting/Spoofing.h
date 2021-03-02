@@ -7,7 +7,7 @@
 int sendDiscoverPacket(AddressInfo& info);
 int sendOfferPacket(DHCP_header& rDHCP, IP_header& rIP, AddressInfo& info);
 int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* sock, AddressInfo& info);
-int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, std::map<uint16_t, uint32_t>, AddressInfo& info);
+int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info);
 int dnsMITM(char* qDNS, uint8_t* raw_packet, AddressInfo& info);
 
 DWORD WINAPI startDHCPStarvation(LPVOID info);

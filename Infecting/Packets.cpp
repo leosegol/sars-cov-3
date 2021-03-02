@@ -238,9 +238,10 @@ size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
 	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = net_checksum_tcpudp(
 		htons(((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->len),
 		17,
-		(uint8_t*)((IP_header*)&raw_packet[sizeof(Ethernet_header)])->ip_srcaddr,
+		(uint8_t*)&(((IP_header*)&raw_packet[sizeof(Ethernet_header)])->ip_srcaddr),
 		(uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)]
 	);
+	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = 0;
 
 	frameSize = sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header) +
 		sizeof(DNS_header) + qsize + rsize - 4;

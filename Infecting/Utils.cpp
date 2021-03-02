@@ -250,6 +250,7 @@ uint8_t* getARPinformation(uint32_t ipv4)
 	DWORD dwSize = 0;
 	DWORD dwRetVal = 0;
 	DWORD dwResult;
+	uint32_t ip;
 
 	dwResult = GetIpNetTable(NULL, &dwSize, 0);
 	if (dwResult == ERROR_INSUFFICIENT_BUFFER)
@@ -260,10 +261,8 @@ uint8_t* getARPinformation(uint32_t ipv4)
 		if (pIpNetTable->dwNumEntries > 0)
 			for (i = 0; i < pIpNetTable->dwNumEntries; i++)
 			{
-				//std::cout << pIpNetTable->table[i].dwAddr << ',';
-				//printHex((char*)pIpNetTable->table[i].bPhysAddr, 6);
-				if (pIpNetTable->table[i].dwAddr == ipv4
-					|| hexToIP(pIpNetTable->table[i].dwAddr) == ipv4)
+				ip = pIpNetTable->table[i].dwAddr;
+				if (ip == ipv4 || hexToIP(ip) == ipv4)
 					return pIpNetTable->table[i].bPhysAddr;
 			}
 	free(pIpNetTable);
