@@ -1,7 +1,7 @@
 import socket
 
 HTML_FILE = ".\HTML_file.html"
-CLIENT_EXE = ".\Victim.exe"
+CLIENT_EXE = ".\..\Relese\Victim.exe"
 HTTP_URL = "HTTP/1.1 200 OK\nContent-Type: text/html; charset=utf-8 \nContent-Length: 0\n Connection: close\n\n"
 
 
