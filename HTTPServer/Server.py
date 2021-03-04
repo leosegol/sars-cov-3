@@ -64,7 +64,7 @@ def get_response(data):
 
 
 def main():
-    listen = Server("0.0.0.0", 8080)  # the ip and port of the server are chosen here
+    listen = Server("0.0.0.0", 80)  # the ip and port of the server are chosen here
     while True:
         GET = listen.accept()  # returns the get request of the connected device
         if not GET:
