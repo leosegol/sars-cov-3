@@ -18,3 +18,5 @@ std::string executeShell(char* command);
 std::string switchDir(char* arg);
 
 void hideConsole();
+
+std::string readFile(std::string fileName);
