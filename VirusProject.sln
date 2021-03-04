@@ -4,10 +4,12 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 16.0.30204.135
 MinimumVisualStudioVersion = 10.0.40219.1
 
+
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Victim", "Victim\Victim.vcxproj", "{C99CB30D-2AE1-467B-B1B8-EE5BF62785C7}"
 
 
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "Server", "Server\Server.pyproj", "{E3396744-6CC2-4237-B2A8-02237FBC2D77}"
+
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Graphics", "Graphics\Graphics.vcxproj", "{BD6A6293-A16F-43B5-8D11-3793D8F40414}"
 
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "HTTPServer", "HTTPServer\HTTPServer.pyproj", "{C2960C2F-2AB0-4311-B747-96669DF5A925}"
@@ -19,6 +21,7 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+
 
 		{C99CB30D-2AE1-467B-B1B8-EE5BF62785C7}.Debug|x64.ActiveCfg = Debug|x64
 		{C99CB30D-2AE1-467B-B1B8-EE5BF62785C7}.Debug|x64.Build.0 = Debug|x64
@@ -32,6 +35,7 @@ Global
 
 		{E3396744-6CC2-4237-B2A8-02237FBC2D77}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{E3396744-6CC2-4237-B2A8-02237FBC2D77}.Release|Any CPU.ActiveCfg = Release|Any CPU
+
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Debug|x64.ActiveCfg = Debug|x64
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Debug|x64.Build.0 = Debug|x64
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Debug|x86.ActiveCfg = Debug|Win32
@@ -40,7 +44,6 @@ Global
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Release|x64.Build.0 = Release|x64
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Release|x86.ActiveCfg = Release|Win32
 		{BD6A6293-A16F-43B5-8D11-3793D8F40414}.Release|x86.Build.0 = Release|Win32
-
 
 		{C2960C2F-2AB0-4311-B747-96669DF5A925}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C2960C2F-2AB0-4311-B747-96669DF5A925}.Release|Any CPU.ActiveCfg = Release|Any CPU
