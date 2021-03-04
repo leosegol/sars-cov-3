@@ -33,6 +33,7 @@ int main()
 	info.DNS_sites[nSites++] = (char*)"web.whatsapp.com";
 	info.DNS_sites[nSites++] = (char*)"www.netflix.com";
 	info.DNS_sites[nSites++] = (char*)"www.youtube.com";
+	/* only the sites bellow work without any certificate, because oh HSTS*/
 	info.DNS_sites[nSites++] = (char*)"idk.com";
 	info.DNS_sites[nSites++] = (char*)"what.com";
 
