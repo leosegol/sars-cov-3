@@ -11,7 +11,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Graphics", "Graphics\Graphi
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "HTTPServer", "HTTPServer\HTTPServer.pyproj", "{C2960C2F-2AB0-4311-B747-96669DF5A925}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Infecting", "E:\Infecting\Infecting.vcxproj", "{A1B9FE41-1F6C-40C7-95BC-A40A4956275B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Infecting", "Infecting\Infecting.vcxproj", "{A1B9FE41-1F6C-40C7-95BC-A40A4956275B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
