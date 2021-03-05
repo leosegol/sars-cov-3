@@ -14,6 +14,58 @@
 
 #include <random>
 
+uint8_t ack[40];
+
+void setAck(AddressInfo &info)
+{
+	ack[0] = 53;		// Message Type
+	ack[1] = 1;
+	ack[2] = 5;
+
+	ack[3] = 54;		// DHCP server's ip
+	ack[4] = 4;
+	*((uint32_t*)&ack[5]) = inet_addr((const char*)info.gateWay);
+	//ack[6];
+	//ack[7];				// taken
+	//ack[8];
+
+	ack[9] = 51;		// lease time
+	ack[10] = 4;
+	*((uint32_t*)&ack[11]) = htonl(3600);
+	//ack[12];
+	//ack[13];				// taken
+	//ack[14];
+
+	ack[15] = 1;		// netMask
+	ack[16] = 4;
+	*((uint32_t*)&ack[17]) = inet_addr((const char*)info.netmask);
+	//ack[18];
+	//ack[19];					// taken
+	//ack[20];
+
+	ack[21] = 3;		// router ip
+	ack[22] = 4;
+	*((uint32_t*)&ack[23]) = inet_addr((const char*)info.gateWay); // tempotal
+	//ack[24];
+	//ack[25];				// taken
+	//ack[26];
+
+	ack[27] = 6;		// DNS
+	ack[28] = 4;
+	*((uint32_t*)&ack[29]) = inet_addr((const char*)info.ipv4);
+	//ack[40];
+	//ack[32];				// taken
+	//ack[32];
+
+	ack[33] = 15;		// Domain name
+	ack[34] = 4;
+	*((uint32_t*)&ack[35]) = htonl(*(uint32_t*)&info.domainName);
+	//ack[36];
+	//ack[37];				// taken
+	//ack[38];
+
+	ack[39] = 255;
+}
 
 void createDHCPdiscoverHeader(char* packet, size_t pHeader, uint8_t htype)
 {
@@ -267,6 +319,8 @@ void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, Ad
 	p_d_dhcp->magic[2] = 83;
 	p_d_dhcp->magic[3] = 99;
 
+	memcpy(p_d_dhcp->opt, ack, 40);
+	/*
 	p_d_dhcp->opt[0] = 53;		// Message Type
 	p_d_dhcp->opt[1] = 1;
 	p_d_dhcp->opt[2] = 5;
@@ -314,6 +368,7 @@ void createDHCPackHeader(char* packet, size_t pHeader, DHCP_header& pRequest, Ad
 	//p_d_dhcp->opt[38];
 
 	p_d_dhcp->opt[39] = 255;
+	*/
 }
 
 void createDNSResponseHeader(char* packet, size_t pHeader, DNS_header& rDNS)

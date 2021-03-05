@@ -36,6 +36,7 @@ int main()
 	info.DNS_sites[nSites++] = (char*)"idk.com";
 	info.DNS_sites[nSites++] = (char*)"what.com";
 
+	setAck(info);
 	startSpoofing((LPVOID)&info); // start the spoofing of the DHCP and 
 
 	free(info.DNS_sites);

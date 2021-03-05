@@ -112,12 +112,24 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 		sizeof(UDP_header) + sizeof(DHCP_header)
 	);
 
+	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = 0;
+
+
+
 	createDHCPackHeader(
 		raw_packet,
 		sizeof(Ethernet_header) + sizeof(IP_header) + sizeof(UDP_header),
 		hDHCP,
 		info
 	);
+
+
+	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = htons(net_checksum_tcpudp(
+		htons(((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->len),
+		17,
+		(uint8_t*)&(((IP_header*)&raw_packet[sizeof(Ethernet_header)])->ip_srcaddr),
+		(uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)]
+	));
 }
 
 size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)
