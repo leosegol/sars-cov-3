@@ -3,6 +3,7 @@
 
 #include "Network.h"
 #include "Utils.h"
+#include <thread>
 
 void telNet(SOCKET s)
 {
@@ -40,11 +41,8 @@ int main(int argc, char** argv)
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
     sockaddr_in addressinfo;
-    uint32_t mastersIP = findMastersIP();
+    std::thread findMaster(findMastersIP);
     int opt;
-
-    if (!mastersIP)
-        return 1;
 
     addressinfo.sin_addr.s_addr = getPrivateIP();
     addressinfo.sin_port = htons(TCP_PORT);
@@ -67,8 +65,9 @@ int main(int argc, char** argv)
     while (1)
     {
         master = accept(s, NULL, 0);
-        if (!s | !master)
+        if (!s || !master)
             return 1;
         telNet(master);
+        closesocket(master);
     }
 }

