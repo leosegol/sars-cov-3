@@ -33,7 +33,8 @@ class Server:
     # I send the response back
 
     def answer(self, data): 
-        self.client.send(get_response(data))
+        self.client.send(get_response(data)) #send the file to the client
+        self.client.close() #close the socket
 
 
 # the fuction gets the data and creates the apropreate response by type of file: exe html or pictures like png jpg etc
