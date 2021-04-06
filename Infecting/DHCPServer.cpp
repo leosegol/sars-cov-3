@@ -33,8 +33,8 @@ int main()
 	info.DNS_sites[nSites++] = (char*)"web.whatsapp.com";
 	info.DNS_sites[nSites++] = (char*)"www.netflix.com";
 	info.DNS_sites[nSites++] = (char*)"www.youtube.com";
-	info.DNS_sites[nSites++] = (char*)"idk.com";
-	info.DNS_sites[nSites++] = (char*)"what.com";
+	info.DNS_sites[nSites++] = (char*)"n12.co.il";
+	info.DNS_sites[nSites++] = (char*)"www.n12.co.il";
 
 	setAck(info);
 	startSpoofing((LPVOID)&info); // start the spoofing of the DHCP and 

