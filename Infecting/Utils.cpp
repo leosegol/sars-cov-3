@@ -13,14 +13,11 @@
 #include <algorithm>
 
 #include <pcap.h>
-#pragma comment(lib, "wpcap.lib")
-#pragma comment(lib, "packet.lib")
 
 #include <winsock2.h>
 #include <iphlpapi.h>
 #include <stdio.h>
 #include <stdlib.h>
-#pragma comment(lib, "IPHLPAPI.lib")
 
 #include <string>
 

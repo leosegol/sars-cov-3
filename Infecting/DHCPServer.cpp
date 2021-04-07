@@ -12,6 +12,9 @@
 #include <pcap.h>
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "packet.lib")
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "IPHLPAPI.lib")
+
 #include <Mstcpip.h>
 
 int main()

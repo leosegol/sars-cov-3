@@ -9,6 +9,7 @@ protocol = {
     "REQ": 8569,
     "RPY": 4586
 }
+
 """
 some files cant be read in the cml, so the server opens a file and inserts the data into it
 """
@@ -31,8 +32,7 @@ def search_bot(s, address):
             break
         dec = str(protocol["RPY"])
         dec2 = msg.decode()
-        print(dec, dec2)
-        if msg.decode() == str(protocol["RPY"]):
+        if msg.decode().strip() == str(protocol["RPY"]).strip():
             address.append(addr[0])
 
 

@@ -9,16 +9,12 @@
 #include "Spoofing.h"
 
 #include <pcap.h>
-#pragma comment(lib, "wpcap.lib")
-#pragma comment(lib, "packet.lib")
-
 #include <time.h>
 #include <iostream>
 #include <Mstcpip.h>
 #include <winsock2.h>
 #include <WS2tcpip.h>
 #pragma pack(1)
-#pragma comment(lib, "Ws2_32.lib")
 
 #include <map>
 

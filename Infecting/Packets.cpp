@@ -6,8 +6,6 @@
 #include <iostream>
 #include <WS2tcpip.h>
 #pragma pack(1)
-#pragma comment(lib, "Ws2_32.lib")
-
 #include <random>
 
 void getDHCPPacketInfo(char* packet, DHCP_header& pDHCP, UDP_header& pUDP, IP_header& pIP);

