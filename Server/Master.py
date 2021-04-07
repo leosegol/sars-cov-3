@@ -33,7 +33,8 @@ def search_bot(s, address):
         dec = str(protocol["RPY"])
         dec2 = msg.decode()
         if msg.decode().strip() == str(protocol["RPY"]).strip():
-            address.append(addr[0])
+            if addr[0] not in address:
+                address.append(addr[0])
 
 
 def telnet():
