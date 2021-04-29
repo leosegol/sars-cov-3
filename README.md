@@ -16,3 +16,6 @@ The http server is written in python, it doesn't have a lot of traffic so effici
 because it doesnt need to be fast and it's a lot simpler to program and control.
 
 The bot master has special commands which are not Shell, axplained better in server's readme.
+
+
+The infecting must have the npcap dlls, you can download it here. https://nmap.org/download.html
