@@ -86,7 +86,7 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 	IP_header hIP = *(IP_header*)pIP;
 	sockaddr_in toStr;
 	toStr.sin_addr.s_addr = getRequestedIP(*(DHCP_header*)pDHCP);
-
+	
 	createEthernetHeader(
 		raw_packet,
 		0,
@@ -110,7 +110,7 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 		sizeof(UDP_header) + sizeof(DHCP_header)
 	);
 
-	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = 0;
+	//((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = 0;
 
 
 
@@ -121,13 +121,15 @@ void createDHCPackPacket(char* raw_packet, void* pDHCP, void* pIP, AddressInfo& 
 		info
 	);
 
-
+	/* for speed purpose i wont calculate the checksum for the DHCP, it is not mandatory*/
+	/*
 	((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->chksum = htons(net_checksum_tcpudp(
 		htons(((UDP_header*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)])->len),
 		17,
 		(uint8_t*)&(((IP_header*)&raw_packet[sizeof(Ethernet_header)])->ip_srcaddr),
 		(uint8_t*)&raw_packet[sizeof(Ethernet_header) + sizeof(IP_header)]
 	));
+	*/
 }
 
 size_t createDNSResponsePacket(char* raw_packet, char* qDNS, AddressInfo& info)

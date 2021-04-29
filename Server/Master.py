@@ -68,13 +68,13 @@ def telnet():
             command = input("$>")   # entering the command
             if command == "return":   # in case of return we break
                 break
-            elif command == "":
+            elif command == "":    # catching empty string
                 continue
-            s.send(command.encode())
+            s.send(command.encode())    # senfing the packet
             output = s.recv(4096)
             while len(output) >= 4096:
                 output += s.recv(4096)
-            if "read" == command[0:4]:
+            if "read" == command[0:4]:    # catching the special command
                 view_file(command, output)
                 continue
             print(output.decode())

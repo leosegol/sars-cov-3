@@ -167,6 +167,7 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	sockaddr_in dst;
 	int size = sizeof(dst);
 
+	/* all flags for the socket*/
 	int optval = 1;
 	int in;
 	int error;
@@ -174,10 +175,12 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	int mitm;
 	uint8_t destMac[6];
 
+	/* structs that point to thier part in the packet*/
 	DHCP_header pDHCP{};
 	UDP_header pUDP{};
 	IP_header pIP{};
 	
+	/* setting the socket that recieves the packets*/
 	sockinfo.sin_addr.s_addr = inet_addr((const char*)(*(AddressInfo*)(info)).ipv4);
 	sockinfo.sin_family = AF_INET;
 	sockinfo.sin_port = htons(0);
@@ -210,6 +213,7 @@ DWORD WINAPI startSpoofing(LPVOID info)
 		std::cout << "setsockopt error <" << WSAGetLastError() << ">" << std::endl;
 		goto creationError;
 	}
+	/* enable the socket to send broadcasts*/
 	WSAIoctl(s, SIO_RCVALL, &optval, sizeof(optval), 0, 0, (LPDWORD)&in, 0, 0);
 
 
@@ -223,10 +227,6 @@ DWORD WINAPI startSpoofing(LPVOID info)
 	/*Listens while no error occured*/
 	while (!responseError)
 	{
-		/*Clearing the data of prior packets*/
-		//memset(response_packet, 0, 65536);
-		//memset(raw_packet, 0, 65536);
-
 		/*Recieve packets*/
 		error = recvfrom(s, raw_packet, 65536, 0, (sockaddr*)&dst, &size); 
 

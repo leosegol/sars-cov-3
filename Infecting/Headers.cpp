@@ -12,7 +12,7 @@
 
 #include <random>
 
-uint8_t ack[40];
+uint8_t ack[40]; // static part of the ack packet
 
 void setAck(AddressInfo &info)
 {

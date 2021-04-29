@@ -42,20 +42,20 @@ class Server:
 def get_response(data):
     file_data = b""
     print(data)
-    if "driver.exe" in data:
+    if "driver.exe" in data:    # if asking for the driver i send it
         with open(CLIENT_EXE, 'rb') as file:
             file_data += file.read()
         size = len(file_data)
         res = f"HTTP/1.1 200 OK\nContent-Type: application/vnd.microsoft.portable-executable; charset=utf-8 " \
               f"\nContent-Length: {size}\nConnection: close\n\n".encode()
         res += file_data
-    elif "jpg" in data or "png" in data:
+    elif "jpg" in data or "png" in data:    # if a picture is asked i send the picture
         with open(f"./{data}", 'rb') as file:
             file_data += file.read()
         size = len(file_data)
         res = f"HTTP/1.1 200 OK\nContent-Type: Image/xyz; charset=utf-8 \nContent-Length: {size}\n Connection: close\n\n".encode()
         res += file_data
-    else:
+    else:   # when the site is loaded i send the html file
         with open(HTML_FILE, 'rb') as file:
             file_data += file.read()
         size = len(file_data)

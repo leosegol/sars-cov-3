@@ -222,6 +222,7 @@ uint16_t in_checksum(uint16_t* ptr, int nbytes)
 
 	return answer;
 }
+
 uint8_t getDHCPtype(DHCP_header& hDHCP)
 {
 	for (int i = 0; i < sizeof DHCP_header::opt; i++)

