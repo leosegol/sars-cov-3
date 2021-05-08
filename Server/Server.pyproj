@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>e3396744-6cc2-4237-b2a8-02237fbc2d77</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Master.py</StartupFile>
+    <StartupFile>app.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Master.py" />
+    <Compile Include="app.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="readme.txt" />

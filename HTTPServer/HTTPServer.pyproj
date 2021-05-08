@@ -4,7 +4,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>c2960c2f-2ab0-4311-b747-96669df5a925</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>Server.py</StartupFile>
+    <StartupFile>app.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -22,7 +22,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Server.py" />
+    <Compile Include="app.py" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="HTML_file.html" />

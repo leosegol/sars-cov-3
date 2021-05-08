@@ -27,7 +27,7 @@
     <ClCompile Include="Spoofing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DHCPServer.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -26,10 +26,10 @@
     <ClCompile Include="Utils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Victim.cpp">
+    <ClCompile Include="Network.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Network.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

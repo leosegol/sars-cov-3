@@ -145,7 +145,7 @@
   <ItemGroup>
     <ClCompile Include="Network.cpp" />
     <ClCompile Include="Utils.cpp" />
-    <ClCompile Include="Victim.cpp" />
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
