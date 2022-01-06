@@ -1,7 +1,7 @@
 # sars-cov-3
 sars-cov-3 is my a project for my finals.
 This virus spreads in networks using DHCP spoofing and DNS hijacking. 
-The attacker replaces certin sites with his site which says the site has a problem and am application must be downloaded and ran to fix it.
+The attacker replaces certain sites with his site which says the site has a problem and an application must be downloaded and ran to fix it.
 When the application is ran for the first time it copies itself to the startup menu of the computer and runs in the background.
 When the bot master connects to the same network as a victim they connect, and the master has the option to choose the victim and send Shell commands which will be ran
 by the bot.
